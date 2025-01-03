@@ -25,13 +25,7 @@ Reason: Many scripts are outdated, "skidded", poorly made, with very bad stabili
 > [!WARNING]
 > As stated in the LICENSE:
 
-> - You **MAY** edit the project for personal usage only.
-> - You **MAY** create your own night configuration file.
-> - To share your night configuration file, read through the [License](https://github.com/warprbx/Night/blob/main/LICENSE).
-
-> - You **MUST** always include the following Credit string: `https://github.com/warprbx/Night`
-> - You are **NOT** allowed to claim authorship of the source code provided in this repository.
-> - You **MUST** always include the following [License](https://github.com/warprbx/Night/blob/main/LICENSE)
+> - LICENSE BEING MADE SOON
 
 > [!TIP]
 > You can discuess with other users  in the discussion tab, or by the discord for any inquires!.<br />
