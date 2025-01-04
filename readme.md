@@ -20,7 +20,7 @@ end
 # The Night Project
 
 This project aims to provide a single script for all your needs, instead of having to search for a script on your every need. <br />
-Reason: Many scripts are outdated, "skidded", poorly made, with very bad stability, with most scripts being obfuscated.
+Reason: Many scripts are outdated, "skidded", poorly made, with very bad stability.
 
 > [!WARNING]
 > As stated in the LICENSE:
