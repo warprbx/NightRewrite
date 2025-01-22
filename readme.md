@@ -5,16 +5,7 @@
 # Loadstring
 
 ```lua
-    return [[
-  _________                     
- /   _____/ ____   ____   ____  
- \_____  \ /  _ \ /  _ \ /    \ 
- /        (  <_> |  <_> )   |  \
-/_______  /\____/ \____/|___|  /
-        \/                   \/ 
-        still being made...
-    ]]
-end
+loadstring(game:HttpGet("https://raw.githubusercontent.com/warprbx/NightRewrite/refs/heads/main/Night/Loader.luau"))()
 ```
 
 # The Night Project
