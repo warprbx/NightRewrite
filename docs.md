@@ -47,6 +47,14 @@ local Functions = Night.Assets.Functions
 local Tabs = Night.Tabs.Tabs
 local Background = Night.Background
 
+Functions.Notify = function(text, duration, flag)
+    Night.Assets.Notifications.Send({
+        Description = text,
+        Duration = duration,
+        Flag = flag
+    })
+end
+
 Functions.GetService = function(name)
     assert(type(name) == 'string', string.format(
         'Expected service name to be string, got %s',
