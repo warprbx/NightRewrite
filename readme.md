@@ -22,3 +22,6 @@ Reason: Many scripts are outdated, "skidded", poorly made, with very bad stabili
 > You can discuess with other users  in the discussion tab, or by the discord for any inquires!.<br />
 > You can become enable the a contributor and get **FREE** premium access by good contributions!<br /><br />
 > If this script is helpful to you, please click `⭐ Star` in the upper right corner of the page to support it, thank you!
+
+## Documentation
+You can check out the documentation [here](docs.md).
