@@ -6,7 +6,7 @@
 > [!WARNING]
 > If you want to add custom modules to an already supported game by Night, ignore the first 2 steps
 
-[!How to make your own game support using Night]
+#  How to make your own game support using Night
 > First, add the script below at the top of your custom (make sure the file's name has the id of the game you want to add support for):
 
 ```lua
@@ -271,3 +271,5 @@ ModuleData.Toggle.Functions.Settings.TextBox({
     end
 })
 ```
+
+If you still don't understand, you can check Night's games SRC.
