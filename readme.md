@@ -10,8 +10,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/warprbx/NightRewrite/
 
 # The Night Project
 
-This project aims to provide a single script for all your needs, instead of having to search for a script on your every need. <br />
-Reason: Many scripts are outdated, "skidded", poorly made, with very bad stability. UI design is from EXE 5.
+This project aims to provide a single script for all your needs. UI design is from EXE 5.
 
 > [!WARNING]
 > As stated in the LICENSE:
