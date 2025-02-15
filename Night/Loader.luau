@@ -162,7 +162,6 @@ if queue_on_teleport then
                     loadstring(game:HttpGet("https://raw.githubusercontent.com/warprbx/NightRewrite/refs/heads/main/Night/Loader.luau"))()
                 end
             ]]
-            writefile("test.lua", str)
             queue_on_teleport(str)
         end
     end))
