@@ -43,7 +43,7 @@ getgenv().Night = {
             Sliders = {},
             TextBoxes = {},
             MiniToggles = {},
-            ToggleLists = {},
+            Dropdowns = {},
             ModuleKeybinds = {},
             Other = {}
         },
@@ -168,8 +168,9 @@ if queue_on_teleport then
     end))
 end
 
-Assets.Main.Load("Night/Games/Universal.lua", "https://raw.githubusercontent.com/warprbx/NightRewrite/refs/heads/main/Night/Games/Universal.lua")
-Assets.Main.Load("Night/Games/" .. getgenv().Night.GameSave .. ".lua", "https://raw.githubusercontent.com/warprbx/NightRewrite/refs/heads/main/Night/Games/"..getgenv().Night.GameSave..".lua")
+Assets.Main.Load("Universal")
+Assets.Main.Load(getgenv().Night.GameSave)
+
 Assets.Main.ToggleVisibility(true)
 
 getgenv().Night.Main = Assets.Main
