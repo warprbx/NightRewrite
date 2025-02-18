@@ -59,7 +59,7 @@ local SpeedData = {
     PulseDuration = 15,
     Mode = "Velocity",
     WallCheck = true,
-    AutoJump = false,
+    AutoJump = true,
     Pulse = false,
     OldWS = nil,
     OldJumpPower = nil,
@@ -205,7 +205,7 @@ SpeedModule.Functions.Settings.Slider({
 SpeedModule.Functions.Settings.Dropdown({
     Name = "Speed Mode",
     Description = "Change Which Mode Of Speed To Use",
-    Default = "WalkSpeed",
+    Default = "Velocity",
     Options = {"WalkSpeed", "Velocity", "CFrame", "TP"},
     SelectLimit = 1,
     Flag = "UniversalSpeedMode",
@@ -227,14 +227,33 @@ SpeedModule.Functions.Settings.Dropdown({
                 end
                 repeat task.wait() until #SpeedData.PulseInstances == 3 
                 if value == "TP" then
-                    SpeedModule.Settings.UniversalSpeedTPDelay.Functions.SetVisiblity(true)
+                    if SpeedModule and SpeedModule.Settings then
+                        repeat task.wait() until SpeedModule and SpeedModule.Settings and SpeedModule.Settings.UniversalSpeedTPDelay
+                        if SpeedModule.Settings.UniversalSpeedTPDelay then
+                            SpeedModule.Settings.UniversalSpeedTPDelay.Functions.SetVisiblity(true)
+                        else
+                            return
+                        end
+                    else
+                        return
+                    end
+
                     repeat task.wait() until SpeedModule.Settings.UniversalSpeedPulseToggle
                     SpeedModule.Settings.UniversalSpeedPulseToggle.Functions.SetVisiblity(false)
                     for i,v in SpeedData.PulseInstances do
                         v.Functions.SetVisiblity(false)
                     end
                 else
-                    SpeedModule.Settings.UniversalSpeedTPDelay.Functions.SetVisiblity(false)
+                    if SpeedModule and SpeedModule.Settings then
+                        repeat task.wait() until SpeedModule and SpeedModule.Settings and SpeedModule.Settings.UniversalSpeedTPDelay
+                        if SpeedModule.Settings.UniversalSpeedTPDelay then
+                            SpeedModule.Settings.UniversalSpeedTPDelay.Functions.SetVisiblity(false)
+                        else
+                            return
+                        end
+                    else
+                        return
+                    end
                     SpeedModule.Settings.UniversalSpeedPulseToggle.Functions.SetVisiblity(true)
                     if SpeedModule.Settings.UniversalSpeedPulseToggle.Enabled then
                         for i,v in SpeedData.PulseInstances do
@@ -355,7 +374,7 @@ local FlyData = {
         Up = "Space",
         Down = "LeftControl"
     },
-    FlySpeeds = {Vertical = 25},
+    FlySpeeds = {Vertical = 40},
     Data = {Up = false, Down = false, CanBounce = true},
     SpeedData = {
         Pulse = false,
@@ -387,14 +406,15 @@ local FlyModule = tabs.Movement.Functions.NewModule({
                             bg.Functions.CreateMobileButton({
                                 Name = "Fly UP",
                                 Flag = "FlyUpMobileButton",
-                                Callback = function()
-                                    FlyData.Data.Down = false
-                                    if FlyData.Data.Up then
-                                        FlyData.Data.Up = false
-                                    else
+                                Callbacks = {
+                                    Began = function()
+                                        FlyData.Data.Down = false
                                         FlyData.Data.Up = true
+                                    end,
+                                    End = function()
+                                        FlyData.Data.Up = false
                                     end
-                                end
+                                }
                             })
                         end
 
@@ -402,14 +422,15 @@ local FlyModule = tabs.Movement.Functions.NewModule({
                             bg.Functions.CreateMobileButton({
                                 Name = "Fly Down",
                                 Flag = "FlyDownMobileButton",
-                                Callback = function()
-                                    FlyData.Data.Up = false
-                                    if FlyData.Data.Down then
-                                        FlyData.Data.Down = false
-                                    else
+                                Callbacks = {
+                                    Began = function()
+                                        FlyData.Data.Up = false
                                         FlyData.Data.Down = true
+                                    end,
+                                    End = function()
+                                        FlyData.Data.Down = false
                                     end
-                                end
+                                }
                             })
                         end
                     end
@@ -550,7 +571,7 @@ FlyModule.Functions.Settings.Slider({
     Description = "Change How Fast Your Move Up And Down",
     Min = 0,
     Max = 150,
-    Default = 25,
+    Default = 40,
     Decimals = 0,
     Flag = "UniversalFlyVerticalSpeedSlider",
     Callback = function(self, value)
