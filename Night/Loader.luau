@@ -120,14 +120,10 @@ end
 
 if gamesave == "no file" and getgenv().Night.CheckOtherConfig then
     if getgenv().Night.GameRootId == getgenv().Night.GameSave then
-        gamesave = Assets.Config.Load(tostring(game.PlaceId), "Game")
+        Assets.Config.Load(tostring(game.PlaceId), "Game")
     else
-        gamesave = Assets.Config.Load(tostring(getgenv().Night.GameRootId), "Game")
+        Assets.Config.Load(tostring(getgenv().Night.GameRootId), "Game")
     end
-end
-
-if gamesave == "no file" then
-    Assets.Config.Save(tostring(getgenv().Night.GameSave), getgenv().Night.Config.Game)
 end
 
 if getgenv().Night.Mobile then
