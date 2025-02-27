@@ -192,7 +192,7 @@ if getgenv().Night.Mobile or getgenv().Night.Config.UI.ToggleKeyCode and getgenv
 end
 task.wait(0.15)
 Assets.Notifications.Send({
-    Description = "Check out premium tab! Some modules were added. Join discord.gg/4us9VRGjrj",
+    Description = "Check out premium tab! Some modules were added. Join discord.gg/4us9VRGjrj for support",
     Duration = math.huge,
     Flag = "discordnoti"
 })
