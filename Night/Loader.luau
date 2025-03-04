@@ -32,8 +32,8 @@ getgenv().Night = {
             Notifications = true,
             Anim = true,
             ArrayList = false,
-            TabColor = {value1 = 40, value2 = 40, value3 = 40},
-            TabTransparency = 0.07,
+            TabColor = {value1 = 25, value2 = 25, value3 = 25},
+            TabTransparency = 0.03,
             KeybindTransparency = 0.7,
             KeybindColor = {value1 = 0, value2 = 0, value3 = 0},
         },
@@ -193,7 +193,7 @@ if getgenv().Night.Mobile or getgenv().Night.Config.UI.ToggleKeyCode and getgenv
 end
 task.wait(0.15)
 Assets.Notifications.Send({
-    Description = "Join discord.gg/4us9VRGjrj to get free night+, suggest, or report bugs!",
+    Description = "Check out premium tab! Some modules were added. Join discord.gg/4us9VRGjrj for support",
     Duration = math.huge,
     Flag = "discordnoti"
 })
