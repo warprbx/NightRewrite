@@ -2,8 +2,9 @@ if getgenv().Night then
     return error("Night is already loaded")
 end
 
-repeat task.wait() until game:IsLoaded()
-
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
 
 getgenv().Night = {
     Dev = false,
@@ -165,10 +166,13 @@ if queue_on_teleport then
             end
 
             str = str..[[
+                if not game:IsLoaded() then
+                    game.Loaded:Wait()
+                end
                 if getgenv().NightInit.Dev and isfile("Night/Premium/Loader.lua") then
                     loadstring(readfile("Night/Premium/Loader.lua"))()
                 else
-                    loadstring(game:HttpGet("https://raw.githubusercontent.com/warprbx/NightRewrite/refs/heads/main/Night/Premium/Loader.luau"))()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/warprbx/NightRewrite/refs/heads/main/Night/Premium/Loader.lua"))()
                 end
             ]]
             queue_on_teleport(str)
@@ -196,7 +200,7 @@ if getgenv().Night.Mobile or getgenv().Night.Config.UI.ToggleKeyCode and getgenv
 end
 task.wait(0.15)
 Assets.Notifications.Send({
-    Description = "Check out premium tab! Some modules were added. Join discord.gg/4us9VRGjrj for support",
+    Description = "Check out premium tab! Some modules were added. Join https://discord.gg/PYVuXbZ7bV for support",
     Duration = math.huge,
     Flag = "discordnoti"
 })
