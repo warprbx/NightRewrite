@@ -401,40 +401,7 @@ local FlyModule = tabs.Movement.Functions.NewModule({
             repeat 
                 if Functions.IsAlive(lp) then
                     SpeedData.Disable = true
-                    if Night.Mobile then
-                        if bg.MobileButtons and bg.MobileButtons.Buttons and not bg.MobileButtons.Buttons["FlyUpMobileButton"] then
-                            bg.Functions.CreateMobileButton({
-                                Name = "Fly UP",
-                                Flag = "FlyUpMobileButton",
-                                Callbacks = {
-                                    Began = function()
-                                        FlyData.Data.Down = false
-                                        FlyData.Data.Up = true
-                                    end,
-                                    End = function()
-                                        FlyData.Data.Up = false
-                                    end
-                                }
-                            })
-                        end
-
-                        if bg.MobileButtons and bg.MobileButtons.Buttons and not bg.MobileButtons.Buttons["FlyDownMobileButton"] then
-                            bg.Functions.CreateMobileButton({
-                                Name = "Fly Down",
-                                Flag = "FlyDownMobileButton",
-                                Callbacks = {
-                                    Began = function()
-                                        FlyData.Data.Up = false
-                                        FlyData.Data.Down = true
-                                    end,
-                                    End = function()
-                                        FlyData.Data.Down = false
-                                    end
-                                }
-                            })
-                        end
-                    end
-
+                
                     if FlyData.Modes.Fly == "Velocity" then
                         FlyData.CurrentValue = lp.Character.HumanoidRootPart:GetMass()/1.67
                         if FlyData.Data.Up then
@@ -534,16 +501,8 @@ local FlyModule = tabs.Movement.Functions.NewModule({
                 task.wait(0.001)
             until not FlyData.Enabled
         else
-            if Night.Mobile then
-                if bg.MobileButtons and bg.MobileButtons.Buttons and bg.MobileButtons.Buttons["FlyUpMobileButton"] and bg.MobileButtons.Buttons["FlyUpMobileButton"].Functions then
-                    bg.MobileButtons.Buttons["FlyUpMobileButton"].Functions.Destroy()
-                end
-                if bg.MobileButtons and bg.MobileButtons.Buttons and bg.MobileButtons.Buttons["FlyDownMobileButton"] and bg.MobileButtons.Buttons["FlyDownMobileButton"].Functions then
-                    bg.MobileButtons.Buttons["FlyDownMobileButton"].Functions.Destroy()
-                end
-                FlyData.Data.Up = false
-                FlyData.Data.Down = false
-            end
+            FlyData.Data.Up = false
+            FlyData.Data.Down = false
             SpeedData.Disable = false
             if Functions.IsAlive(lp) and FlyData.SpeedData.OldWS then
                 lp.Character:FindFirstChildWhichIsA("Humanoid").WalkSpeed = FlyData.SpeedData.OldWS
@@ -697,39 +656,40 @@ table.insert(FlyData.SpeedData.PulseInstances, FlyModule.Functions.Settings.Slid
     end
 }))
 
-if not Night.Mobile then
-    FlyModule.Functions.Settings.Keybind({
-        Name = "Set Fly Up Keybind",
-        Description = "Which Keybind Will Make You Move Up",
-        Default = "Space",
-        Flag = "UniversalFlySetUpKeybind",
-        Callbacks = {
-            Began = function()
-                FlyData.Data.Up = true
-                FlyData.Data.Down = false
-            end,
-            End = function()
-                FlyData.Data.Up = false
-            end
-        }
-    })
-    
-    FlyModule.Functions.Settings.Keybind({
-        Name = "Set Fly Down Keybind",
-        Description = "Which Keybind Will Make You Move Down",
-        Default = "LeftControl",
-        Flag = "UniversalFlySetDownKeybind",
-        Callbacks = {
-            Began = function()
-                FlyData.Data.Down = true
-                FlyData.Data.Up = false
-            end,
-            End = function()
-                FlyData.Data.Down = false
-            end
-        }
-    })
-end
+FlyModule.Functions.Settings.Keybind({
+    Name = "Set Fly Up Keybind",
+    Description = "Which Keybind Will Make You Move Up",
+    Default = "Space",
+    Mobile = {Text = "Fly Up", Default = true, Visible = false},
+    Flag = "UniversalFlySetUpKeybind",
+    Callbacks = {
+        Began = function()
+            FlyData.Data.Up = true
+            FlyData.Data.Down = false
+        end,
+        End = function()
+            FlyData.Data.Up = false
+        end
+    }
+})
+
+FlyModule.Functions.Settings.Keybind({
+    Name = "Set Fly Down Keybind",
+    Description = "Which Keybind Will Make You Move Down",
+    Default = "LeftControl",
+    Mobile = {Text = "Fly Down", Default = true, Visible = false},
+    Flag = "UniversalFlySetDownKeybind",
+    Callbacks = {
+        Began = function()
+            FlyData.Data.Down = true
+            FlyData.Data.Up = false
+        end,
+        End = function()
+            FlyData.Data.Down = false
+        end
+    }
+})
+
 
 local ShaderData = {
     Enabled = false,
