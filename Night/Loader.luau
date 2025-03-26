@@ -82,14 +82,13 @@ end
 
 local uis = Assets.Functions.cloneref(game:GetService("UserInputService")) :: UserInputService
 local ws = Assets.Functions.cloneref(game:GetService("Workspace")) :: Workspace
-local plrs = Assets.Functions.cloneref(game:GetService("Players")) :: Players
 
 local currentCamera = ws:FindFirstChildWhichIsA("Camera") :: Camera
 
-if not uis.KeyboardEnabled and uis.TouchEnabled then
+-- if not uis.KeyboardEnabled and uis.TouchEnabled then
     getgenv().Night.Mobile = true
-    getgenv().Night.Config.UI.Size = {X = 0.7, Y = 0.9}
-end
+    -- getgenv().Night.Config.UI.Size = {X = 0.7, Y = 0.9}
+-- end
 
 
 if not isfolder("Night") then
