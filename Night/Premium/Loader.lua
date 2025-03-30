@@ -147,7 +147,6 @@ end
 
 if queue_on_teleport then
     table.insert(getgenv().Night.Connections, plrs.LocalPlayer.OnTeleport:Connect(function(state)
-        if not getgenv().Night.Teleporting then
             getgenv().Night.Teleporting = true
 
             local str = ""
@@ -169,14 +168,13 @@ if queue_on_teleport then
                 if not game:IsLoaded() then
                     game.Loaded:Wait()
                 end
-                if getgenv().NightInit.Dev and isfile("Night/Premium/Loader.lua") then
+                if getgenv().NightInit and getgenv().NightInit.Dev and isfile("Night/Premium/Loader.lua") then
                     loadstring(readfile("Night/Premium/Loader.lua"))()
                 else
                     loadstring(game:HttpGet("https://raw.githubusercontent.com/warprbx/NightRewrite/refs/heads/main/Night/Premium/Loader.lua"))()
                 end
             ]]
             queue_on_teleport(str)
-        end
     end))
 end
 
