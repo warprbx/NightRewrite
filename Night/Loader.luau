@@ -82,6 +82,7 @@ end
 
 local uis = Assets.Functions.cloneref(game:GetService("UserInputService")) :: UserInputService
 local ws = Assets.Functions.cloneref(game:GetService("Workspace")) :: Workspace
+local plrs = Assets.Functions.cloneref(game:GetService("Players")) :: Players
 
 local currentCamera = ws:FindFirstChildWhichIsA("Camera") :: Camera
 
@@ -142,33 +143,39 @@ if getgenv().Night.Mobile then
 end
 
 if queue_on_teleport then
-    local str = ""
-    if getgenv().Night.InitSave then
-        str = "getgenv().NightInit = {"
-        for i, v in getgenv().Night.InitSave do
-            if i ~= #getgenv().Night.InitSave then
-                if typeof(v) == "string" then
-                    str = str..tostring(i)..' = "'..tostring(v)..'" , '
-                else
-                    str = str..tostring(i).." = "..tostring(v).." , "
-                end
-            end
-        end
-        str = string.sub(str, 0, #str-2).."}\n"
-    end
+    table.insert(getgenv().Night.Connections, plrs.LocalPlayer.OnTeleport:Connect(function(state)
+        if state == Enum.TeleportState.Started then
+            getgenv().Night.Teleporting = true
 
-    str = str..[[
-        if not game:IsLoaded() then
-            game.Loaded:Wait()
+            local str = ""
+            if getgenv().Night.InitSave then
+                str = "getgenv().NightInit = {"
+                for i, v in getgenv().Night.InitSave do
+                    if i ~= #getgenv().Night.InitSave then
+                        if typeof(v) == "string" then
+                            str = str..tostring(i)..' = "'..tostring(v)..'" , '
+                        else
+                            str = str..tostring(i).." = "..tostring(v).." , "
+                        end
+                    end
+                end
+                str = string.sub(str, 0, #str-2).."}\n"
+            end
+
+            str = str..[[
+                if not game:IsLoaded() then
+                    game.Loaded:Wait()
+                end
+                repeat task.wait() until game:IsLoaded()
+                if getgenv().NightInit and getgenv().NightInit.Dev and isfile("Night/Loader.lua") then
+                    loadstring(readfile("Night/Loader.lua"))()
+                else
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/warprbx/NightRewrite/refs/heads/main/Night/Loader.luau"))()
+                end
+            ]]
+            queue_on_teleport(str)
         end
-        repeat task.wait() until game:IsLoaded()
-        if getgenv().NightInit.Dev and isfile("Night/Loader.lua") then
-            loadstring(readfile("Night/Loader.lua"))()
-        else
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/warprbx/NightRewrite/refs/heads/main/Night/Loader.luau"))()
-        end
-    ]]
-    queue_on_teleport(str)
+    end))
 end
 
 Assets.Main.Load("Universal")
