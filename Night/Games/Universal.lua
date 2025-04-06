@@ -1122,11 +1122,15 @@ local NameTagData = {
     Enabled = false,
     Connections = {},
     Mode = "DisplayName",
-    Instances = {}
+    Instances = {},
+    TeamCheck = false
 }
 
 local nametagplr = function(v: Player, user: string)
-    if not v or not Functions.IsAlive(v) then return end
+    if not v or not Functions.IsAlive(v) then 
+        repeat task.wait() until v and Functions.IsAlive(v) or not v
+        if not v then return end
+    end
 
     local char = v.Character
 
@@ -1246,6 +1250,20 @@ local nametagplr = function(v: Player, user: string)
     task.spawn(function()
         repeat 
             if v then
+                if v.Team == lp.Team and NameTagData.TeamCheck then
+                    for i,v in NameTagData.Connections[v] do
+                        v:Disconnect()
+                    end
+                    table.clear(NameTagData.Connections[v])
+                    NameTagData.Connections[v] = nil
+        
+                    if NameTagData.Instances[v] then
+                        NameTagData.Instances[v]:Destroy()
+                        NameTagData.Instances[v] = nil
+                    end
+                    break
+                end
+
                 if Functions.IsAlive(v) then
                     char = v.Character
                     magvalue.Text = math.round(lp:DistanceFromCharacter(char.HumanoidRootPart.Position)).."m" or "nil"
@@ -1281,40 +1299,48 @@ end
 
 local starttag = function()
     for i,v in plrs:GetPlayers() do
-        if v and v ~= lp and v.Character and v.Character.PrimaryPart and v.Character:FindFirstChild("Humanoid") then
+        if v and v ~= lp and Functions.IsAlive(v) and (NameTagData.TeamCheck and v.Team ~= lp.Team or not NameTagData.TeamCheck) then
             if NameTagData.Mode == "DisplayName" then 
                 nametagplr(v, v.DisplayName)
             else
                 nametagplr(v, v.Name)
             end
             NameTagData.Connections[v].Respawn = v.CharacterAdded:Connect(function()
-                repeat task.wait() until v and v.Character and v.Character.PrimaryPart and v.Character:FindFirstChild("Humanoid") and v.Character:FindFirstChild("Humanoid").Health
-                if NameTagData.Mode == "DisplayName" then 
-                    nametagplr(v, v.DisplayName)
-                else
-                    nametagplr(v, v.Name)
+                repeat task.wait() until v and Functions.IsAlive(v) or not v
+                if v and (NameTagData.TeamCheck and v.Team ~= lp.Team or not NameTagData.TeamCheck) then
+                    if NameTagData.Mode == "DisplayName" then 
+                        nametagplr(v, v.DisplayName)
+                    else
+                        nametagplr(v, v.Name)
+                    end
                 end
             end)
         end
     end
 
-    NameTagData.Connections.Add = plrs.ChildAdded:Connect(function(v)
-        repeat task.wait() until v and v.Character and v.Character.PrimaryPart and v.Character:FindFirstChild("Humanoid") or not v
-        if NameTagData.Mode == "DisplayName" then 
-            nametagplr(v, v.DisplayName)
-        else
-            nametagplr(v, v.Name)
-        end
-        NameTagData.Connections[v].Respawn = v.CharacterAdded:Connect(function()
-            repeat task.wait() until v and v.Character and v.Character.PrimaryPart and v.Character:FindFirstChild("Humanoid") and v.Character:FindFirstChild("Humanoid").Health
+    NameTagData.Connections.Add = plrs.PlayerAdded:Connect(function(v)
+        repeat task.wait() until v and Functions.IsAlive(v) or not v
+        if v and (NameTagData.TeamCheck and v.Team ~= lp.Team or not NameTagData.TeamCheck) then
             if NameTagData.Mode == "DisplayName" then 
                 nametagplr(v, v.DisplayName)
             else
                 nametagplr(v, v.Name)
             end
-        end)
+
+            NameTagData.Connections[v].Respawn = v.CharacterAdded:Connect(function()
+                repeat task.wait() until v and Functions.IsAlive(v) or not v
+                if v then
+                    if NameTagData.Mode == "DisplayName" then 
+                        nametagplr(v, v.DisplayName)
+                    else
+                        nametagplr(v, v.Name)
+                    end
+                end
+            end)
+        end
     end)
-    NameTagData.Connections.Remove = plrs.ChildRemoved:Connect(function(v)
+    
+    NameTagData.Connections.Remove = plrs.PlayerRemoving:Connect(function(v)
         if NameTagData.Connections[v] then
             for i,v in NameTagData.Connections[v] do
                 v:Disconnect()
@@ -1368,6 +1394,36 @@ NameTagModule.Functions.Settings.Dropdown({
     Flag = "NameTagUserNameMode",
     Callback = function(self, value)
         NameTagData.Mode = value
+        for i,v in NameTagData.Connections do
+            if typeof(v) == "RBXScriptConnection" then
+                v:Disconnect()
+            elseif typeof(v) == "table" then
+                for i2, v2 in v do
+                    v2:Disconnect()
+                end
+                table.clear(v)
+            end
+        end
+        table.clear(NameTagData.Connections)
+
+        for i,v in NameTagData.Instances do
+            v:Destroy()
+        end
+        table.clear(NameTagData.Instances)
+        if NameTagData.Enabled then
+            starttag()
+        end
+    end
+})
+
+
+NameTagModule.Functions.Settings.MiniToggle({
+    Name = "Team Check",
+    Description = "Doesnt give your teammates a nametag",
+    Default = true,
+    Flag = "NameTagTeamCheck",
+    Callback = function(self, enabled)
+        NameTagData.TeamCheck = enabled
         for i,v in NameTagData.Connections do
             if typeof(v) == "RBXScriptConnection" then
                 v:Disconnect()
