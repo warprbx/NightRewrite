@@ -203,6 +203,6 @@ Assets.Notifications.Send({
     Duration = math.huge,
     Flag = "discordnoti"
 })
-
+Night.Loaded = true
 
 return Assets.Main
