@@ -148,34 +148,34 @@ end
 
 if queue_on_teleport then
     table.insert(getgenv().Night.Connections, plrs.LocalPlayer.OnTeleport:Connect(function(state)
-            getgenv().Night.Teleporting = true
+        getgenv().Night.Teleporting = true
 
-            local str = ""
-            if getgenv().Night.InitSave then
-                str = "getgenv().NightInit = {"
-                for i, v in getgenv().Night.InitSave do
-                    if i ~= #getgenv().Night.InitSave then
-                        if typeof(v) == "string" then
-                            str = str..tostring(i)..' = "'..tostring(v)..'" , '
-                        else
-                            str = str..tostring(i).." = "..tostring(v).." , "
-                        end
+        local str = ""
+        if getgenv().Night.InitSave then
+            str = "getgenv().NightInit = {"
+            for i, v in getgenv().Night.InitSave do
+                if i ~= #getgenv().Night.InitSave then
+                    if typeof(v) == "string" then
+                        str = str..tostring(i)..' = "'..tostring(v)..'" , '
+                    else
+                        str = str..tostring(i).." = "..tostring(v).." , "
                     end
                 end
-                str = string.sub(str, 0, #str-2).."}\n"
             end
+            str = string.sub(str, 0, #str-2).."}\n"
+        end
 
-            str = str..[[
-                if not game:IsLoaded() then
-                    game.Loaded:Wait()
-                end
-                if getgenv().NightInit and getgenv().NightInit.Dev and isfile("Night/Premium/Loader.lua") then
-                    loadstring(readfile("Night/Premium/Loader.lua"))()
-                else
-                    loadstring(game:HttpGet("https://raw.githubusercontent.com/warprbx/NightRewrite/refs/heads/main/Night/Premium/Loader.lua"))()
-                end
-            ]]
-            queue_on_teleport(str)
+        str = str..[[
+            if not game:IsLoaded() then
+                game.Loaded:Wait()
+            end
+            if getgenv().NightInit and getgenv().NightInit.Dev and isfile("Night/Premium/Loader.lua") then
+                loadstring(readfile("Night/Premium/Loader.lua"))()
+            else
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/warprbx/NightRewrite/refs/heads/main/Night/Premium/Loader.lua"))()
+            end
+        ]]
+        queue_on_teleport(str)
     end))
 end
 
