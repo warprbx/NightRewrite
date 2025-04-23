@@ -24,7 +24,6 @@ local RS = Functions.cloneref(game:GetService("RunService")) :: RunService
 local LP = Plrs.LocalPlayer
 local Cam = WS.CurrentCamera
 
-
 Functions.Notify = function(Description: string, Duration: number, Flag: string | any)
     if Description == nil or not tonumber(Duration) then return "Failed to send make sure you have a description and a valid duration" end
     if setthreadidentity then
@@ -135,7 +134,7 @@ else
 end
 
 if not HitRemoteName then
-    Functions.Notify("Failed to get the hit remote, please send this to a dev, https://discord.gg/PvhQnTWaHy, copied to clipboard", 15)
+    Functions.Notify("Failed to get the hit remote, due to how bad your executor is. Find supported executors in our server: https://discord.gg/PvhQnTWaHy (invite copied to clipboard).", 15)
     if setclipboard then
         setclipboard("https://discord.gg/PvhQnTWaHy")
     elseif toclipboard then
@@ -1774,7 +1773,7 @@ end)();
     }
 
     infJumpData.Toggle = Tabs.Movement.Functions.NewModule({
-        Name = "Infinite Jump",
+        Name = "InfiniteJump",
         Description = "Lets you jump with no limit",
         Flag = "InfiniteJump",
         Icon = "rbxassetid://73148132024514",
@@ -1782,7 +1781,7 @@ end)();
             if callback then
                 infJumpData.Misc.Connection = UIS.JumpRequest:Connect(function()
                     if Functions.IsAlive() and not infJumpData.Misc.Cooldown then
-                        LP.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) -- i hate this module
+                        LP.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
                         if infJumpData.Settings.Delay > 0 then
                             infJumpData.Misc.Cooldown = true
                             task.delay(infJumpData.Settings.Delay, function()
@@ -2910,7 +2909,7 @@ end
     })
 end)()
 
-local getnearestorb = function()
+local GetNearestOrb = function()
     local d = {distance = math.huge, orb = nil}
     for i,v in CS:GetTagged("treeOrb") do
         if v:GetAttribute("TreeOrbSecret") and v:FindFirstChild("treeOrb") and v:FindFirstChild("Spirit") then
@@ -2923,7 +2922,7 @@ local getnearestorb = function()
     return d
 end
 
-local getnearestspirit = function()
+local GetNearestSpirit = function()
     local d = {spirit = nil, distance = math.huge}
     for i,v in CS:GetTagged("EvelynnSoul") do
         if v:FindFirstChild("bigball") and v:GetAttribute("SpiritSecret") then
@@ -2936,7 +2935,7 @@ local getnearestspirit = function()
     return d
 end
 
-local getnearestmetal = function()
+local GetNearestMetal = function()
     local d = {metal = nil, distance = math.huge}
     for i,v in CS:GetTagged("hidden-metal-prompt") do
         if v:FindFirstChild("hidden-metal-prompt") and v:FindFirstChild("hidden-metal-prompt"):IsA("ProximityPrompt") and v:FindFirstChild("hidden-metal-prompt").ActionText == "Collect" and v:GetAttribute("Id") and v:FindFirstChild("Part") then
@@ -2960,7 +2959,7 @@ end
         }
     }
     
-    local autokit = Tabs.Utility.Functions.NewModule({
+    AutoKit.Toggle = Tabs.Utility.Functions.NewModule({
         Name = "AutoKit",
         Description = "Automatically uses your kits ability",
         Icon = "rbxassetid://80238190157458",
@@ -2969,7 +2968,7 @@ end
             if callback then
                 repeat
                     if AutoKit.Settings.Kit == "Eldertree" then
-                        local orb = getnearestorb()
+                        local orb = GetNearestOrb()
                         if orb.orb and AutoKit.Settings.KitRanges.Eldertree >= orb.distance then
                             if GameData.Modules.Remotes:Get("ConsumeTreeOrb"):CallServer({treeOrbSecret = orb.orb:GetAttribute("TreeOrbSecret")}) then
                                 orb.orb:Destroy()
@@ -2978,12 +2977,12 @@ end
                             end
                         end
                     elseif AutoKit.Settings.Kit == "Evelynn" then
-                        local spirit = getnearestspirit()
+                        local spirit = GetNearestSpirit()
                         if spirit.spirit then
                             GameData.Controllers.SpiritAssasin:useSpirit(LP, spirit.spirit)
                         end
                     elseif AutoKit.Settings.Kit == "MetalDetector" then
-                        local metal = getnearestmetal()
+                        local metal = GetNearestMetal()
                         if metal.metal and AutoKit.Settings.KitRanges.MetalDetector >= metal.distance then
                             GameData.Modules.Animation:playAnimation(LP, GameData.Modules.AnimationTypes.SHOVEL_DIG)
                             GameData.Modules.Remotes:Get("CollectCollectableEntity"):SendToServer({
@@ -2997,7 +2996,7 @@ end
         end
     })
     
-    autokit.Functions.Settings.Dropdown({
+    AutoKit.Toggle.Functions.Settings.Dropdown({
         Name = "Kit",
         Description = "What kit to use",
         Default = "Eldertree",
@@ -3014,7 +3013,7 @@ end
         end
     })
     
-    autokit.Functions.Settings.Slider({
+    AutoKit.Toggle.Functions.Settings.Slider({
         Name = "Range",
         Description = "Range to collect eldertree orbs",
         Min = 1,
@@ -3027,7 +3026,7 @@ end
         end
     })
     
-    autokit.Functions.Settings.Slider({
+    AutoKit.Toggle.Functions.Settings.Slider({
         Name = "Range",
         Description = "Range to collect metal",
         Min = 1,
