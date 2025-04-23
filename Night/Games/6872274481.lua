@@ -25,7 +25,7 @@ local LP = Plrs.LocalPlayer
 local Cam = WS.CurrentCamera
 
 Functions.Notify = function(Description: string, Duration: number, Flag: string | any)
-    if Description == nil or not tonumber(Duration) then return "Failed to send make sure you have a description and a valid duration" end
+    if Description == nil or not tonumber(Duration) then return "Failed to send, make sure you have a description and a valid duration" end
     if setthreadidentity then
         pcall(setthreadidentity, 8)
     end
