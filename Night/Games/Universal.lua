@@ -1,7 +1,6 @@
 local Night = getgenv().Night
 local Dashboard = Night.Assets.Dashboard
 local Functions = Night.Assets.Functions
-local bg = Night.Background
 
 local tabs = {
     Movement = Dashboard.NewTab({
@@ -1446,3 +1445,46 @@ NameTagModule.Functions.Settings.MiniToggle({
     end
 })
 
+local FovData = {
+    Fov = 120,
+    Original = 70,
+    Connection = nil
+}
+
+FovData.Toggle = tabs.Render.Functions.NewModule({
+    Name = "FOVChanger",
+    Description = "Changes your FOV",
+    Icon = "rbxassetid://124243860531404",
+    Flag = "FOVChanger",
+    Callback = function(self, callback)
+        if callback then
+            FovData.Original = ws.CurrentCamera.FieldOfView
+            FovData.Connection = ws.CurrentCamera:GetPropertyChangedSignal("FieldOfView"):Connect(function()
+                ws.CurrentCamera.FieldOfView = FovData.Fov
+            end)
+            ws.CurrentCamera.FieldOfView = FovData.Fov
+        else
+            if FovData.Connection then
+                FovData.Connection:Disconnect()
+            end
+            if FovData.Original then
+                ws.CurrentCamera.FieldOfView = FovData.Original
+            end
+        end
+    end
+})
+
+FovData.Toggle.Functions.Settings.Slider({
+    Name = "FOV",
+    Description = "Amount of FOV to change to",
+    Min = 0,
+    Max = 120,
+    Default = 120,
+    Flag = "FOVChangerValue",
+    Callback = function(self, callback)
+        FovData.Fov = callback
+        if FovData.Toggle.Data.Enabled then
+            ws.CurrentCamera.FieldOfView = callback
+        end
+    end
+})
