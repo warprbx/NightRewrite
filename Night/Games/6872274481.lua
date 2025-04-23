@@ -11,7 +11,112 @@ local Functions = Assets.Functions :: {
 }
 
 local Noti = Assets.Notifications :: {Send: ({Description: string, Duration: number, Flag: string}) -> any}
-local Tabs = Night.Tabs.Tabs
+local Tabs = Night.Tabs.Tabs :: {
+    cloneref: (service: Instance) -> Instance, 
+    IsAlive: (Player: Player) -> boolean,
+    Notify: (Description: string, Duration: number, Flag: string | any) -> {Functions: {Remove: (RemoveAnimation: boolean) -> nil}}
+}
+
+local Noti = Assets.Notifications :: {Send: ({Description: string, Duration: number, Flag: string}) -> any}
+local Tabs = Night.Tabs.Tabs :: {
+    Combat: {
+        Functions: {NewModule: (
+            {Name: string, Description: string, Icon: string | any, Default: boolean | false, Button: boolean | false, Flag: string, Callback: (self: {Data: {Enabled: boolean}}, Callback: boolean) -> any}
+        ) -> {
+            Data: {Enabled: boolean},
+            Functions: {
+                Settings: {
+                    Slider: ({Name: string, Description: string, ToolTip: string, Min: number, Max: number, Default: number, Decimals: number, DoubleValue: boolean, Flag: string, Hide: boolean, Callback: (self: {}, Callback: number) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    TextBox: ({Name: string, PlaceHolderText: string, Description: string, ToolTip: string, Flag: string, Default: string, Hide: boolean, Callback: (self: {}, Callback: string) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    MiniToggle: ({Name: string, Description: string, ToolTip: string, Default: boolean, Flag: string, Hide: boolean, Callback: (self: {Enabled: boolean}, Callback: boolean) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Dropdown: ({Name: string, Description: string, ToolTip: string, SelectLimit: number, Options: {},  Default: string | {}, Flag: string, Hide: boolean, Callback: (self: {}, Callback: string | {}) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Button: ({Name: string, Description: string, ToolTip: string, Flag: string, Hide: boolean, Callback: (self: {}, Callback: boolean) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Keybind: ({Name: string, Description: string, Default: string, ToolTip: string, Hide: boolean, Flag: string, Callbacks: {Began: () -> (), End: () -> (), Changed: () -> ()}, Mobile: {Text: string, Default: boolean, Visible: boolean}}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},   
+                }
+            }
+        }}
+    }, Movement: {
+        Functions: {NewModule: (
+            {Name: string, Description: string, Icon: string | any, Default: boolean | false, Button: boolean | false, Flag: string, Callback: (self: {Data: {Enabled: boolean}}, Callback: boolean) -> any}
+        ) -> {
+            Data: {Enabled: boolean},
+            Functions: {
+                Settings: {
+                    Slider: ({Name: string, Description: string, ToolTip: string, Min: number, Max: number, Default: number, Decimals: number, DoubleValue: boolean, Flag: string, Hide: boolean, Callback: (self: {}, Callback: number) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    TextBox: ({Name: string, PlaceHolderText: string, Description: string, ToolTip: string, Flag: string, Default: string, Hide: boolean, Callback: (self: {}, Callback: string) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    MiniToggle: ({Name: string, Description: string, ToolTip: string, Default: boolean, Flag: string, Hide: boolean, Callback: (self: {Enabled: boolean}, Callback: boolean) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Dropdown: ({Name: string, Description: string, ToolTip: string, SelectLimit: number, Options: {},  Default: string | {}, Flag: string, Hide: boolean, Callback: (self: {}, Callback: string | {}) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Button: ({Name: string, Description: string, ToolTip: string, Flag: string, Hide: boolean, Callback: (self: {}, Callback: boolean) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Keybind: ({Name: string, Description: string, Default: string, ToolTip: string, Hide: boolean, Flag: string, Callbacks: {Began: () -> (), End: () -> (), Changed: () -> ()}, Mobile: {Text: string, Default: boolean, Visible: boolean}}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},   
+                }
+            }
+        }}
+    }, Render: {
+        Functions: {NewModule: (
+            {Name: string, Description: string, Icon: string | any, Default: boolean | false, Button: boolean | false, Flag: string, Callback: (self: {Data: {Enabled: boolean}}, Callback: boolean) -> any}
+        ) -> {
+            Data: {Enabled: boolean},
+            Functions: {
+                Settings: {
+                    Slider: ({Name: string, Description: string, ToolTip: string, Min: number, Max: number, Default: number, Decimals: number, DoubleValue: boolean, Flag: string, Hide: boolean, Callback: (self: {}, Callback: number) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    TextBox: ({Name: string, PlaceHolderText: string, Description: string, ToolTip: string, Flag: string, Default: string, Hide: boolean, Callback: (self: {}, Callback: string) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    MiniToggle: ({Name: string, Description: string, ToolTip: string, Default: boolean, Flag: string, Hide: boolean, Callback: (self: {Enabled: boolean}, Callback: boolean) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Dropdown: ({Name: string, Description: string, ToolTip: string, SelectLimit: number, Options: {},  Default: string | {}, Flag: string, Hide: boolean, Callback: (self: {}, Callback: string | {}) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Button: ({Name: string, Description: string, ToolTip: string, Flag: string, Hide: boolean, Callback: (self: {}, Callback: boolean) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Keybind: ({Name: string, Description: string, Default: string, ToolTip: string, Hide: boolean, Flag: string, Callbacks: {Began: () -> (), End: () -> (), Changed: () -> ()}, Mobile: {Text: string, Default: boolean, Visible: boolean}}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},   
+                }
+            }
+        }}
+    }, Player: {
+        Functions: {NewModule: (
+            {Name: string, Description: string, Icon: string | any, Default: boolean | false, Button: boolean | false, Flag: string, Callback: (self: {Data: {Enabled: boolean}}, Callback: boolean) -> any}
+        ) -> {
+            Data: {Enabled: boolean},
+            Functions: {
+                Settings: {
+                    Slider: ({Name: string, Description: string, ToolTip: string, Min: number, Max: number, Default: number, Decimals: number, DoubleValue: boolean, Flag: string, Hide: boolean, Callback: (self: {}, Callback: number) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    TextBox: ({Name: string, PlaceHolderText: string, Description: string, ToolTip: string, Flag: string, Default: string, Hide: boolean, Callback: (self: {}, Callback: string) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    MiniToggle: ({Name: string, Description: string, ToolTip: string, Default: boolean, Flag: string, Hide: boolean, Callback: (self: {Enabled: boolean}, Callback: boolean) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Dropdown: ({Name: string, Description: string, ToolTip: string, SelectLimit: number, Options: {},  Default: string | {}, Flag: string, Hide: boolean, Callback: (self: {}, Callback: string | {}) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Button: ({Name: string, Description: string, ToolTip: string, Flag: string, Hide: boolean, Callback: (self: {}, Callback: boolean) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Keybind: ({Name: string, Description: string, Default: string, ToolTip: string, Hide: boolean, Flag: string, Callbacks: {Began: () -> (), End: () -> (), Changed: () -> ()}, Mobile: {Text: string, Default: boolean, Visible: boolean}}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},   
+                }
+            }
+        }}
+    }, World: {
+        Functions: {NewModule: (
+            {Name: string, Description: string, Icon: string | any, Default: boolean | false, Button: boolean | false, Flag: string, Callback: (self: {Data: {Enabled: boolean}}, Callback: boolean) -> any}
+        ) -> {
+            Data: {Enabled: boolean},
+            Functions: {
+                Settings: {
+                    Slider: ({Name: string, Description: string, ToolTip: string, Min: number, Max: number, Default: number, Decimals: number, DoubleValue: boolean, Flag: string, Hide: boolean, Callback: (self: {}, Callback: number) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    TextBox: ({Name: string, PlaceHolderText: string, Description: string, ToolTip: string, Flag: string, Default: string, Hide: boolean, Callback: (self: {}, Callback: string) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    MiniToggle: ({Name: string, Description: string, ToolTip: string, Default: boolean, Flag: string, Hide: boolean, Callback: (self: {Enabled: boolean}, Callback: boolean) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Dropdown: ({Name: string, Description: string, ToolTip: string, SelectLimit: number, Options: {},  Default: string | {}, Flag: string, Hide: boolean, Callback: (self: {}, Callback: string | {}) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Button: ({Name: string, Description: string, ToolTip: string, Flag: string, Hide: boolean, Callback: (self: {}, Callback: boolean) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Keybind: ({Name: string, Description: string, Default: string, ToolTip: string, Hide: boolean, Flag: string, Callbacks: {Began: () -> (), End: () -> (), Changed: () -> ()}, Mobile: {Text: string, Default: boolean, Visible: boolean}}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},   
+                }
+            }
+        }}
+    }, Utility: {
+        Functions: {NewModule: (
+            {Name: string, Description: string, Icon: string | any, Default: boolean | false, Button: boolean | false, Flag: string, Callback: (self: {Data: {Enabled: boolean}}, Callback: boolean) -> any}
+        ) -> {
+            Data: {Enabled: boolean},
+            Functions: {
+                Settings: {
+                    Slider: ({Name: string, Description: string, ToolTip: string, Min: number, Max: number, Default: number, Decimals: number, DoubleValue: boolean, Flag: string, Hide: boolean, Callback: (self: {}, Callback: number) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    TextBox: ({Name: string, PlaceHolderText: string, Description: string, ToolTip: string, Flag: string, Default: string, Hide: boolean, Callback: (self: {}, Callback: string) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    MiniToggle: ({Name: string, Description: string, ToolTip: string, Default: boolean, Flag: string, Hide: boolean, Callback: (self: {Enabled: boolean}, Callback: boolean) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Dropdown: ({Name: string, Description: string, ToolTip: string, SelectLimit: number, Options: {},  Default: string | {}, Flag: string, Hide: boolean, Callback: (self: {}, Callback: string | {}) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Button: ({Name: string, Description: string, ToolTip: string, Flag: string, Hide: boolean, Callback: (self: {}, Callback: boolean) -> any}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},
+                    Keybind: ({Name: string, Description: string, Default: string, ToolTip: string, Hide: boolean, Flag: string, Callbacks: {Began: () -> (), End: () -> (), Changed: () -> ()}, Mobile: {Text: string, Default: boolean, Visible: boolean}}) -> {Functions: {SetVisiblity: (visible: boolean) -> any}},   
+                }
+            }
+        }}
+    }
+}
 
 local Rep = Functions.cloneref(game:GetService("ReplicatedStorage")) ::ReplicatedStorage
 local WS = Functions.cloneref(game:GetService("Workspace")) :: Workspace
@@ -911,7 +1016,7 @@ end)();
                                     local RPrams = RaycastParams.new()
                                     RPrams.FilterType = Enum.RaycastFilterType.Include
                                     RPrams.FilterDescendantsInstances = CS:GetTagged("block")
-                                    local Ray = WS:Raycast(LP.Character.HumanoidRootPart, EntityPos)
+                                    local Ray = WS:Raycast(LP.Character.HumanoidRootPart.Position, EntityPos)
                                     if Ray and Ray.Instance then
                                         continue
                                     end
@@ -3006,8 +3111,8 @@ end
             AutoKit.Settings.Kit = value
             for i,v in AutoKit.Settings.KitRanges do
                 task.spawn(function()
-                    repeat task.wait() until autokit.Settings[i.."AutoKitRange"].Functions
-                    autokit.Settings[i.."AutoKitRange"].Functions.SetVisiblity(value == i)
+                    repeat task.wait() until AutoKit.Toggle.Settings[i.."AutoKitRange"].Functions
+                    AutoKit.Toggle.Settings[i.."AutoKitRange"].Functions.SetVisiblity(value == i)
                 end)
             end
         end
