@@ -1016,7 +1016,7 @@ end)();
                                     local RPrams = RaycastParams.new()
                                     RPrams.FilterType = Enum.RaycastFilterType.Include
                                     RPrams.FilterDescendantsInstances = CS:GetTagged("block")
-                                    local Ray = WS:Raycast(LP.Character.HumanoidRootPart.Position, EntityPos)
+                                    local Ray = WS:Raycast(LP.Character.HumanoidRootPart.Position, EntityPos, RPrams)
                                     if Ray and Ray.Instance then
                                         continue
                                     end
