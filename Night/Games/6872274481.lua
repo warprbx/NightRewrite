@@ -982,7 +982,7 @@ end)();
                 end
 
                 repeat
-                    task.wait(0.045)
+                    task.wait(0.005)
                     local NearestEntity = GetNearestEntity()
                     if NearestEntity.Entity and KillAuraData.Settings.Range >= NearestEntity.Distance and GameData.Modules.Remotes:Get(HitRemoteName) then
                         local Sword = GetBestSword()
@@ -1107,7 +1107,7 @@ end)();
                                 end)
 
                                 local calc, pos = KillAuraData.Settings.Prediction / 30, LP.Character.HumanoidRootPart.Position
-                                local selfPos, dir = (((pos - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.1)) > 0) and ((pos - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.1))) or 0) * CFrame.lookAt(pos, EntityPos).LookVector + pos, (EntityPos - Cam.CFrame.Position)                            
+                                local selfPos, dir = (((pos - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.05)) > 0) and ((pos - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.1))) or 0) * CFrame.lookAt(pos, EntityPos).LookVector + pos, (EntityPos - Cam.CFrame.Position)                            
                                 GameData.Modules.Remotes:Get(HitRemoteName):SendToServer({
                                     weapon = Sword.Sword.tool,
                                     entityInstance = NearestEntity.Entity,
