@@ -833,7 +833,6 @@ local aimbotmodule = tabs.Combat.Functions.NewModule({
                             if AimbotData.Tween then AimbotData.Tween:Cancel() end
                             AimbotData.Tween = ts:Create(ws.CurrentCamera, TweenInfo.new(AimbotData.Smoothness), {CFrame = CFrame.new(ws.CurrentCamera.CFrame.Position, AimbotData.Data.aimpart.CFrame.Position)})
                             AimbotData.Tween:Play()
-                            -- ws.CurrentCamera.CFrame = ws.CurrentCamera.CFrame:Lerp(CFrame.new(ws.CurrentCamera.CFrame.Position, AimbotData.Data.aimpart.CFrame.Position), AimbotData.Smoothness)
                         end
                     end
                 end))
