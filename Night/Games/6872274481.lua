@@ -1013,7 +1013,7 @@ end)();
                                     local RPrams = RaycastParams.new()
                                     RPrams.FilterType = Enum.RaycastFilterType.Include
                                     RPrams.FilterDescendantsInstances = CS:GetTagged("block")
-                                    local Ray = WS:Raycast(LP.Character.HumanoidRootPart.Position, EntityPos, RPrams)
+                                    local Ray = WS:Raycast(EntityPos, LP.Character.HumanoidRootPart.Position - EntityPos, RPrams)
                                     if Ray and Ray.Instance and WS:FindFirstChild("Map") and  Ray.Instance:IsDescendantOf(WS:FindFirstChild("Map")) then
                                         continue
                                     end
@@ -1099,8 +1099,8 @@ end)();
                                     lastswing = GameData.Controllers.Sword.lastSwingServerTimeDelta
                                 end
 
-                                local calc, pos = KillAuraData.Settings.Prediction / 30, LP.Character.HumanoidRootPart.Position
-                                local selfPos, dir = (((pos - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.05)) > 0) and ((pos - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.1))) or 0) * CFrame.lookAt(pos, EntityPos).LookVector + pos, (EntityPos - Cam.CFrame.Position)                            
+                                local calc = KillAuraData.Settings.Prediction / 30
+                                local selfPos, dir = (((LP.Character.HumanoidRootPart.Position - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.05)) > 0) and ((LP.Character.HumanoidRootPart.Position - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.1))) or 0) * CFrame.lookAt(LP.Character.HumanoidRootPart.Position, EntityPos).LookVector + LP.Character.HumanoidRootPart.Position, (EntityPos - Cam.CFrame.Position)                            
                                 GameData.Modules.Remotes:Get(HitRemoteName):SendToServer({
                                     weapon = Sword.Sword.tool,
                                     entityInstance = NearestEntity.Entity,
@@ -2164,7 +2164,6 @@ end
                         if ScaffoldData.Settings.Tower and UIS:IsKeyDown(Enum.KeyCode.Space) and not UIS:GetFocusedTextBox() then
                             local Velo = LP.Character.HumanoidRootPart.Velocity :: Vector3
 
-                            -- infJumpData.Toggle.Data.Enabled and ScaffoldData.Settings.Boost or
                             LP.Character.HumanoidRootPart.Velocity = Vector3.new(Velo.X, ScaffoldData.Settings.Boost * 6 + 3, Velo.Z)
                         end
                     end
