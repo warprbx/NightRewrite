@@ -892,6 +892,10 @@ end)();
             RequireMouseDown = false,
             MouseDown = false,
             HandCheck = false,
+            Swing = false,
+            OnSwingDelay = false,
+            SwingDelay = 0,
+            Delay = 0,
             AutomaticallySwitch = false,
             Visuals = {
                 Highlight = false,
@@ -981,7 +985,7 @@ end)();
                 end
 
                 repeat
-                    task.wait(0.005)
+                    task.wait(0.0025)
                     local NearestEntity = GetNearestEntity()
                     if NearestEntity.Entity and KillAuraData.Settings.Range >= NearestEntity.Distance and GameData.Modules.Remotes:Get(HitRemoteName) then
                         local Sword = GetBestSword()
@@ -1071,8 +1075,19 @@ end)();
                                             task.wait(0.3)
                                             Particle:Destroy()
                                         end)
-                                    else
+                                    end
+                                end)
+
+                                task.spawn(function()
+                                    if KillAuraData.Settings.Swing and not KillAuraData.Settings.OnSwingDelay then 
                                         GameData.Modules.Animation:playAnimation(LP, GameData.Modules.AnimationTypes.SWORD_SWING)
+                                        GameData.Controllers.ViewModel:playAnimation(GameData.Modules.AnimationTypes.FP_SWING_SWORD)
+                                        if KillAuraData.Settings.SwingDelay > 0 then
+                                            KillAuraData.Settings.OnSwingDelay = true
+                                            task.delay(KillAuraData.Settings.SwingDelay, function()
+                                                KillAuraData.Settings.OnSwingDelay = false
+                                            end)
+                                        end
                                     end
                                 end)
 
@@ -1116,7 +1131,6 @@ end)();
                                     }
                                 })
 
-
                                 GameData.Controllers.Sword.lastSwingServerTimeDelta = WS:GetServerTimeNow() -  GameData.Controllers.Sword.lastSwingServerTime
                                 GameData.Controllers.Sword.lastSwingServerTime = WS:GetServerTimeNow()
                                 
@@ -1127,6 +1141,8 @@ end)();
                                         })
                                     end
                                 end
+
+                                task.wait(KillAuraData.Settings.Delay)
                             else
                                 if KillAuraData.anim.old then
                                     task.spawn(function()
@@ -1191,6 +1207,48 @@ end)();
         Flag = "KillAuraUseLastSwing",
         Callback = function(self, callback)
             KillAuraData.Settings.LastSwingTimeEnabled = callback
+        end
+    })
+
+    local KillAuraSwingDelay
+    KillAuraData.Toggle.Functions.Settings.MiniToggle({
+        Name = "Swing",
+        Description = "Swings your sword near enemys",
+        Default = true,
+        Flag = "KillAuraSwing",
+        Callback = function(self, callback)
+            KillAuraData.Settings.Swing = callback
+            task.spawn(function()
+                repeat task.wait() until KillAuraSwingDelay
+                KillAuraSwingDelay.Functions.SetVisiblity(callback)
+            end)
+        end
+    })
+
+    KillAuraSwingDelay = KillAuraData.Toggle.Functions.Settings.Slider({
+        Name = "Swing Delay",
+        Description = "Delay until another swing takes place",
+        Min = 0,
+        Decimals = 1,
+        Max = 5,
+        Default = 0,
+        Hide = true,
+        Flag = "KillAuraSwingDelay",
+        Callback = function(self, callback)
+            KillAuraData.Settings.SwingDelay = callback
+        end
+    })
+
+    KillAuraData.Toggle.Functions.Settings.Slider({
+        Name = "Delay",
+        Description = "Delay after every hit",
+        Min = 0,
+        Decimals = 1,
+        Max = 5,
+        Default = 0,
+        Flag = "KillAuraDelay",
+        Callback = function(self, callback)
+            KillAuraData.Settings.Delay = callback
         end
     })
 
