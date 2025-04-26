@@ -1008,12 +1008,13 @@ end)();
                                 if getAngle(LP.Character.HumanoidRootPart.CFrame.LookVector * Vector3.new(1, 0, 1), EntityPos, LP.Character.HumanoidRootPart.Position) > KillAuraData.Settings.MaxAngle / 2 * math.pi / 180 then
                                     continue
                                 end 
+
                                 if KillAuraData.Settings.WallCheck then
                                     local RPrams = RaycastParams.new()
                                     RPrams.FilterType = Enum.RaycastFilterType.Include
                                     RPrams.FilterDescendantsInstances = CS:GetTagged("block")
                                     local Ray = WS:Raycast(LP.Character.HumanoidRootPart.Position, EntityPos, RPrams)
-                                    if Ray and Ray.Instance then
+                                    if Ray and Ray.Instance and WS:FindFirstChild("Map") and  Ray.Instance:IsDescendantOf(WS:FindFirstChild("Map")) then
                                         continue
                                     end
                                 end
@@ -1100,7 +1101,6 @@ end)();
 
                                 local calc, pos = KillAuraData.Settings.Prediction / 30, LP.Character.HumanoidRootPart.Position
                                 local selfPos, dir = (((pos - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.05)) > 0) and ((pos - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.1))) or 0) * CFrame.lookAt(pos, EntityPos).LookVector + pos, (EntityPos - Cam.CFrame.Position)                            
-                                print(Sword.Sword.tool)
                                 GameData.Modules.Remotes:Get(HitRemoteName):SendToServer({
                                     weapon = Sword.Sword.tool,
                                     entityInstance = NearestEntity.Entity,
