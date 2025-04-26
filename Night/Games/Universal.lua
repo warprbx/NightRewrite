@@ -850,6 +850,7 @@ local aimbotmodule = tabs.Combat.Functions.NewModule({
                                 AimbotData.FovCircle.instance.Thickness = AimbotData.FovCircle.thickness
                                 AimbotData.FovCircle.instance.Position = vec
                                 AimbotData.FovCircle.instance.Visible = true
+                                task.wait(0.1)
                             else
                                 AimbotData.FovCircle.instance.Position = vec
                             end
@@ -894,7 +895,7 @@ local aimbotmodule = tabs.Combat.Functions.NewModule({
                                     prams.FilterDescendantsInstances = exclude
                                     prams.FilterType = Enum.RaycastFilterType.Exclude
 
-                                    local rcast: RaycastResult = ws:Raycast(lp.character.HumanoidRootPart.Position, AimbotData.Data.aimpart.CFrame.Position, prams)
+                                    local rcast: RaycastResult = ws:Raycast(AimbotData.Data.aimpart.CFrame.Position, lp.character.HumanoidRootPart.Position - AimbotData.Data.aimpart.CFrame.Position, prams)
                                     if rcast and rcast.Instance then
                                         targetplr = nil
                                         AimbotData.Data.aimpart = nil
