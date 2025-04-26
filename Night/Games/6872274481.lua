@@ -340,8 +340,8 @@ local GetBestSword = function()
     for i,v in inventory.items do
         if GameData.Modules.ItemMeta[v.itemType] and GameData.Modules.ItemMeta[v.itemType].sword then
             local sword = GameData.Modules.ItemMeta[v.itemType].sword
-            if sword.baseDamage > Sword.Damage then
-                Sword = {Sword = v, Damage = sword.baseDamage}
+            if sword.damage > Sword.Damage then
+                Sword = {Sword = v, Damage = sword.damage}
             end
         end
     end
@@ -885,11 +885,10 @@ end)();
     local KillAuraData = {
         Settings = {
             Range = 18,
-            Ratio = 0.65,
             MaxAngle = 360,
             Prediction = 15,
             WallCheck = false,
-            RandomRatio = false,
+            LastSwingTimeEnabled = false,
             RequireMouseDown = false,
             MouseDown = false,
             HandCheck = false,
@@ -987,23 +986,20 @@ end)();
                     if NearestEntity.Entity and KillAuraData.Settings.Range >= NearestEntity.Distance and GameData.Modules.Remotes:Get(HitRemoteName) then
                         local Sword = GetBestSword()
                         if Sword.Sword and Sword.Sword.tool then
-                            if KillAuraData.Settings.AutomaticallySwitch then
-                                GameData.Modules.Remotes:Get("SetInvItem"):CallServerAsync({
-                                    ["hand"] = Sword.Sword.tool
-                                })
-                            end
-
                             local CurrentItem = GetInventory().hand 
-                            if KillAuraData.Settings.HandCheck then
-                                if CurrentItem and CurrentItem.itemType then
-                                    local itemMeta = GameData.Modules.ItemMeta[CurrentItem.itemType]
-                                    if not itemMeta or not itemMeta.sword then
-                                        continue
+                            if CurrentItem and CurrentItem.itemType then
+                                local itemMeta = GameData.Modules.ItemMeta[CurrentItem.itemType]
+                                if not itemMeta or not itemMeta.sword then
+                                    if KillAuraData.Settings.AutomaticallySwitch then
+                                        GameData.Modules.Remotes:Get("SetInvItem"):CallServerAsync({
+                                            ["hand"] = Sword.Sword.tool
+                                        })
+                                    else
+                                        if KillAuraData.Settings.HandCheck then continue end
                                     end
-                                else
-                                    continue
                                 end
                             end
+
                             if KillAuraData.Settings.RequireMouseDown and not KillAuraData.Settings.MouseDown then continue end
 
                             local EntityRoot = NearestEntity.EntityData.PrimaryPart
@@ -1036,12 +1032,6 @@ end)();
                                     end
                                 end
 
-                                local ChargeRatio = KillAuraData.Settings.Ratio
-                                if KillAuraData.Settings.RandomRatio then
-                                    if math.random(1, 2) == 1 then
-                                        ChargeRatio = Random.new():NextNumber(0, 1)
-                                    end
-                                end
 
                                 task.spawn(function()
                                     if not KillAuraData.Settings.Visuals.Highlights[NearestEntity] and KillAuraData.Settings.Visuals.Highlight then
@@ -1081,11 +1071,7 @@ end)();
                                             Particle:Destroy()
                                         end)
                                     else
-                                        if ChargeRatio >= 0.4 and GameData.Controllers.Sword:getChargeState() == GameData.Modules.ChargeState.Idle then
-                                            GameData.Controllers.Sword:startCharging(Sword.Sword.itemType, 0)
-                                        else
-                                            GameData.Modules.Animation:playAnimation(LP, GameData.Modules.AnimationTypes.SWORD_SWING)
-                                        end
+                                        GameData.Modules.Animation:playAnimation(LP, GameData.Modules.AnimationTypes.SWORD_SWING)
                                     end
                                 end)
 
@@ -1106,12 +1092,20 @@ end)();
                                     end
                                 end)
 
+
+                                local lastswing = Random.new():NextNumber(3, 40)
+                                if KillAuraData.Settings.LastSwingTimeEnabled then
+                                    lastswing = GameData.Controllers.Sword.lastSwingServerTimeDelta
+                                end
+
                                 local calc, pos = KillAuraData.Settings.Prediction / 30, LP.Character.HumanoidRootPart.Position
                                 local selfPos, dir = (((pos - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.05)) > 0) and ((pos - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.1))) or 0) * CFrame.lookAt(pos, EntityPos).LookVector + pos, (EntityPos - Cam.CFrame.Position)                            
+                                print(Sword.Sword.tool)
                                 GameData.Modules.Remotes:Get(HitRemoteName):SendToServer({
                                     weapon = Sword.Sword.tool,
                                     entityInstance = NearestEntity.Entity,
-                                    chargeRatio = ChargeRatio,
+                                    chargedAttack = {chargeRatio = 0},
+                                    lastSwingServerTimeDelta = lastswing,
                                     validate = {
                                         raycast = {
                                             cameraPosition = {value = selfPos},
@@ -1122,11 +1116,10 @@ end)();
                                     }
                                 })
 
-                                if GameData.Controllers.Sword:getChargeState() == GameData.Modules.ChargeState.Charging then
-                                    GameData.Controllers.Sword:stopCharging(Sword.Sword.itemType)
-                                    GameData.Controllers.Sword:playSwordEffect(itemMeta, ChargeRatio)
-                                end
 
+                                GameData.Controllers.Sword.lastSwingServerTimeDelta = WS:GetServerTimeNow() -  GameData.Controllers.Sword.lastSwingServerTime
+                                GameData.Controllers.Sword.lastSwingServerTime = WS:GetServerTimeNow()
+                                
                                 if CurrentItem and CurrentItem.tool and CurrentItem.tool ~= Sword.Sword.tool then
                                     if not KillAuraData.Settings.AutomaticallySwitch then
                                         GameData.Modules.Remotes:Get("SetInvItem"):CallServerAsync({
@@ -1181,6 +1174,7 @@ end)();
     
     KillAuraData.Toggle.Functions.Settings.Slider({
         Name = "Range",
+        Description = "Range to start attacking",
         Min = 0,
         Max = 18,
         Default = 18,
@@ -1190,28 +1184,13 @@ end)();
         end
     })
 
-    local ChargeRatio = KillAuraData.Toggle.Functions.Settings.Slider({
-        Name = "Charge Ratio",
-        Description = "Amount of charge to use on a hit",
-        Min = 0,
-        Max = 1,
-        Default = 0.65,
-        Decimals = 2,
-        Flag = "KillAuraChargeRatio",
-        Hide = true,
-        Callback = function(self, callback)
-            KillAuraData.Settings.Ratio = callback
-        end
-    })
-
     KillAuraData.Toggle.Functions.Settings.MiniToggle({
-        Name = "Random Charge",
-        Description = "Randomly charges some hits with random charges",
+        Name = "Use LastSwing",
+        Description = "Uses real last swing time, does less damage",
         Default = false,
-        Flag = "KillAuraRandomCharge",
+        Flag = "KillAuraUseLastSwing",
         Callback = function(self, callback)
-            KillAuraData.Settings.RandomRatio = callback
-            ChargeRatio.Functions.SetVisiblity(not callback)
+            KillAuraData.Settings.LastSwingTimeEnabled = callback
         end
     })
 
