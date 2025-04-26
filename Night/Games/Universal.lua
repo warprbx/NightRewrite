@@ -809,6 +809,8 @@ local AimbotData = {
     AimPart = "Head",
     WallCheck = false,
     Smoothness = 0,
+    MadeCircle = false,
+    Tween = nil,
     Settings = {Fov = {}, TriggerDist = {}},
     Data = {aimpart = nil},
     Connections = {}
@@ -828,10 +830,14 @@ local aimbotmodule = tabs.Combat.Functions.NewModule({
                         if AimbotData.Smoothness <= 0 then
                             ws.CurrentCamera.CFrame = CFrame.new(ws.CurrentCamera.CFrame.Position, AimbotData.Data.aimpart.CFrame.Position)
                         else
-                            ts:Create(ws.CurrentCamera, TweenInfo.new(AimbotData.Smoothness), {CFrame = CFrame.new(ws.CurrentCamera.CFrame.Position, AimbotData.Data.aimpart.CFrame.Position)}):Play()
+                            if AimbotData.Tween then AimbotData.Tween:Cancel() end
+                            AimbotData.Tween = ts:Create(ws.CurrentCamera, TweenInfo.new(AimbotData.Smoothness), {CFrame = CFrame.new(ws.CurrentCamera.CFrame.Position, AimbotData.Data.aimpart.CFrame.Position)})
+                            AimbotData.Tween:Play()
+                            -- ws.CurrentCamera.CFrame = ws.CurrentCamera.CFrame:Lerp(CFrame.new(ws.CurrentCamera.CFrame.Position, AimbotData.Data.aimpart.CFrame.Position), AimbotData.Smoothness)
                         end
                     end
                 end))
+
                 table.insert(AimbotData.Connections, rs.Heartbeat:Connect(function()
                     if Drawing then
                         if AimbotData.FovCircle.enabled then
@@ -843,14 +849,17 @@ local aimbotmodule = tabs.Combat.Functions.NewModule({
                                 end
                             end
                             if not AimbotData.FovCircle.instance then
-                                AimbotData.FovCircle.instance = Drawing.new("Circle")
-                                AimbotData.FovCircle.instance.Radius = AimbotData.FovCircle.Size
-                                AimbotData.FovCircle.instance.Color = AimbotData.FovCircle.color
-                                AimbotData.FovCircle.instance.Filled = false
-                                AimbotData.FovCircle.instance.Thickness = AimbotData.FovCircle.thickness
-                                AimbotData.FovCircle.instance.Position = vec
-                                AimbotData.FovCircle.instance.Visible = true
-                                task.wait(0.1)
+                                if not AimbotData.MadeCircle then
+                                    AimbotData.MadeCircle = true
+
+                                    AimbotData.FovCircle.instance = Drawing.new("Circle")
+                                    AimbotData.FovCircle.instance.Radius = AimbotData.FovCircle.Size
+                                    AimbotData.FovCircle.instance.Color = AimbotData.FovCircle.color
+                                    AimbotData.FovCircle.instance.Filled = false
+                                    AimbotData.FovCircle.instance.Thickness = AimbotData.FovCircle.thickness
+                                    AimbotData.FovCircle.instance.Position = vec
+                                    AimbotData.FovCircle.instance.Visible = true
+                                end
                             else
                                 AimbotData.FovCircle.instance.Position = vec
                             end
@@ -864,11 +873,16 @@ local aimbotmodule = tabs.Combat.Functions.NewModule({
                     else
                         local Data = Functions.GetNearestPlrToMouse({
                             Team = AimbotData.TeamCheck,
-                            Limit = (AimbotData.FovCircle.instance.Position.Magnitude + AimbotData.FovCircle.Size),
+                            Limit = (AimbotData.FovCircle.Size),
                             Exclude = {lp}
                         })
-                        targetplr = Data.Player 
-                        targetdist = Data.Distance
+                        if Data and Data.Player then
+                            targetplr = Data.Player 
+                            targetdist = Data.Distance
+                        else
+                            targetplr = nil
+                            targetdist = nil
+                        end
                     end
 
                     if targetplr and ws.CurrentCamera then
@@ -910,6 +924,11 @@ local aimbotmodule = tabs.Combat.Functions.NewModule({
             end
 
         else
+            if AimbotData.Tween then
+                AimbotData.Tween:Cancel()
+                AimbotData.Tween = nil
+            end
+            AimbotData.MadeCircle = false
             if AimbotData.FovCircle.instance then
                 AimbotData.FovCircle.instance:Destroy()
                 AimbotData.FovCircle.instance = nil
