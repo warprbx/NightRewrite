@@ -812,7 +812,7 @@ local AimbotData = {
     MadeCircle = false,
     Tween = nil,
     Settings = {Fov = {}, TriggerDist = {}},
-    Data = {aimpart = nil},
+    Data = {aimpart = nil, Delta = 0},
     Connections = {}
 }
 
@@ -830,14 +830,13 @@ local aimbotmodule = tabs.Combat.Functions.NewModule({
                         if AimbotData.Smoothness <= 0 then
                             ws.CurrentCamera.CFrame = CFrame.new(ws.CurrentCamera.CFrame.Position, AimbotData.Data.aimpart.CFrame.Position)
                         else
-                            if AimbotData.Tween then AimbotData.Tween:Cancel() end
-                            AimbotData.Tween = ts:Create(ws.CurrentCamera, TweenInfo.new(AimbotData.Smoothness), {CFrame = CFrame.new(ws.CurrentCamera.CFrame.Position, AimbotData.Data.aimpart.CFrame.Position)})
-                            AimbotData.Tween:Play()
+                            ws.CurrentCamera.CFrame = ws.CurrentCamera.CFrame:Lerp(CFrame.new(ws.CurrentCamera.CFrame.Position, AimbotData.Data.aimpart.CFrame.Position), AimbotData.Smoothness * AimbotData.Data.Delta)
                         end
                     end
                 end))
 
-                table.insert(AimbotData.Connections, rs.Heartbeat:Connect(function()
+                table.insert(AimbotData.Connections, rs.Heartbeat:Connect(function(delta)
+                    AimbotData.Data.Delta = delta
                     if Drawing then
                         if AimbotData.FovCircle.enabled then
                             local vec = Vector2.new(0,0)
@@ -918,6 +917,7 @@ local aimbotmodule = tabs.Combat.Functions.NewModule({
                             end
                         end
                     end
+                    
 
                 end))
             end
