@@ -7,7 +7,8 @@ local Assets = Night.Assets
 local Functions = Assets.Functions :: {
     cloneref: (service: Instance) -> Instance, 
     IsAlive: (Player: Player) -> boolean,
-    Notify: (Description: string, Duration: number, Flag: string | any) -> {Functions: {Remove: (RemoveAnimation: boolean) -> nil}}
+    Notify: (Description: string, Duration: number, Flag: string | any) -> {Functions: {Remove: (RemoveAnimation: boolean) -> nil}},
+    gethui: () -> CoreGui | PlayerGui
 }
 
 local Noti = Assets.Notifications :: {Send: ({Description: string, Duration: number, Flag: string}) -> any}
@@ -146,8 +147,11 @@ Functions.Notify = function(Description: string, Duration: number, Flag: string 
     end
 end
 
+
 local KnitPath = Rep.rbxts_include.node_modules["@easy-games"].knit
 local Knit = require(KnitPath.src).KnitClient
+repeat task.wait() until Knit and Cam:FindFirstChild("Viewmodel")
+
 local GameData = {
     Controllers = {
         Sword = Knit.Controllers.SwordController,
@@ -191,7 +195,7 @@ local GameData = {
     GameEvents = {}
 }
 
-repeat task.wait() until GameData.Modules.Store:getState().Game and GameData.Modules.Store:getState().Game.matchState and Cam:FindFirstChild("Viewmodel")
+repeat task.wait() until GameData.Modules.Store:getState().Game and GameData.Modules.Store:getState().Game.matchState
 
 local OnUninject = Assets.Main.OnUninject :: BindableEvent
 table.insert(Night.Connections, OnUninject.Event:Connect(function()
@@ -353,6 +357,63 @@ end
 local getAngle = function(look, plrpos, pos)
     local scaledVec = scaleVector(plrpos - pos, 1, 0)
     return calcAngle(look, scaledVec.Unit)
+end
+
+local CreateTimerUi = function(Options: {StartTime: number})
+    local Data = {
+        StartTime = Options.StartTime or 2.5,
+        Functions = {}
+    }
+
+    local FlyUI = Instance.new("ScreenGui", Functions.gethui())
+
+    local BG = Instance.new("Frame", FlyUI)
+    BG.Size = UDim2.fromOffset(260, 80)
+    BG.Position = UDim2.new(0.5, -130, 0.55, 0)
+    BG.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    BG.BorderSizePixel = 0    
+    Instance.new("UICorner", BG).CornerRadius = UDim.new(0, 14)
+
+    local TimeText = Instance.new("TextLabel", BG)
+    TimeText.Size = UDim2.fromScale(1, 0.4)
+    TimeText.Position = UDim2.fromScale(0, 0.1)
+    TimeText.Text = tostring(Data.StartTime)
+    TimeText.Font = Enum.Font.GothamBold
+    TimeText.TextSize = 22
+    TimeText.TextColor3 = Color3.fromRGB(235, 235, 235)
+    TimeText.BackgroundTransparency = 1
+        
+    local PB_BG = Instance.new("Frame", BG)
+    PB_BG.Size = UDim2.new(1, -30, 0.25, 0)
+    PB_BG.Position = UDim2.new(0, 15, 0.65, 0)
+    PB_BG.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    PB_BG.BorderSizePixel = 0
+    Instance.new("UICorner", PB_BG).CornerRadius = UDim.new(0, 12)
+
+    local PB = Instance.new("Frame", PB_BG)
+    PB.Size = UDim2.fromScale(1, 1)
+    PB.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    PB.BorderSizePixel = 0
+    Instance.new("UICorner", PB).CornerRadius = UDim.new(0, 12)
+
+    Data.Functions.Update = function(Time: number, Size: UDim2)
+        if setthreadidentity then
+            pcall(setthreadidentity, 8)
+        end
+
+        TimeText.Text = string.format("%.1f", Time)
+        PB.Size = Size
+    end
+
+    Data.Functions.Destroy = function()
+        if setthreadidentity then
+            pcall(setthreadidentity, 8)
+        end
+
+        FlyUI:Destroy()
+    end
+
+    return Data
 end
 
 GameData.GameEvents.EntityDamage = GameData.Modules.Network.EntityDamageEventZap.On(function(...)
@@ -592,53 +653,6 @@ local SpeedData
     })
 end)();
 
-local FlyUI = Instance.new("ScreenGui")
-FlyUI.Name = "FlyTimeBar"
-FlyUI.Parent = PG
-FlyUI.Enabled = false
-
-local BG = Instance.new("Frame")
-BG.Size = UDim2.new(0, 260, 0, 80)
-BG.Position = UDim2.new(0.5, -130, 0.55, 0)
-BG.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-BG.BorderSizePixel = 0
-BG.Parent = FlyUI
-
-local BGC = Instance.new("UICorner")
-BGC.CornerRadius = UDim.new(0, 14)
-BGC.Parent = BG
-
-local Label = Instance.new("TextLabel")
-Label.Size = UDim2.new(1, 0, 0.4, 0)
-Label.Position = UDim2.new(0, 0, 0.1, 0)
-Label.Text = "0.0"
-Label.Font = Enum.Font.GothamBold
-Label.TextSize = 22
-Label.TextColor3 = Color3.fromRGB(235, 235, 235)
-Label.BackgroundTransparency = 1
-Label.Parent = BG
-
-local PB_BG = Instance.new("Frame")
-PB_BG.Size = UDim2.new(1, -30, 0.25, 0)
-PB_BG.Position = UDim2.new(0, 15, 0.65, 0)
-PB_BG.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-PB_BG.BorderSizePixel = 0
-PB_BG.Parent = BG
-
-local PB_BGC = Instance.new("UICorner")
-PB_BGC.CornerRadius = UDim.new(0, 12)
-PB_BGC.Parent = PB_BG
-
-local PB = Instance.new("Frame")
-PB.Size = UDim2.new(1, 0, 1, 0)
-PB.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-PB.BorderSizePixel = 0
-PB.Parent = PB_BG
-
-local PBC = Instance.new("UICorner")
-PBC.CornerRadius = UDim.new(0, 12)
-PBC.Parent = PB
-
 local FlyData = {
     Settings = {
         Speed = 23,
@@ -652,12 +666,13 @@ local FlyData = {
         LastHit = os.clock(),
         UseBalloons = false,
         DeflateBalloon = false,
-        FlyTimeUI = false,
         Vertical = false,
         VerticalValue = 0,
         VericalAmount = 30,
-        LastOnGround = os.clock()
+        LastOnGround = os.clock(),
+        FlyTimer = false
     },
+    FlyUi = nil,
     Allowed = true,
     Connections = {}
 }
@@ -689,25 +704,20 @@ local FlyData = {
                     end
                 end))
 
-                FlyData.Settings.LastOnGround = os.clock()
-                task.spawn(function()
-                    repeat
-                        task.wait()
-                        FlyUI.Enabled = self.Data.Enabled and FlyData.Settings.FlyTimeUI
-                        if Functions.IsAlive() and FlyData.Settings.FlyTimeUI then
-                            if LP.Character.Humanoid.FloorMaterial == Enum.Material.Air then
-                                local elapsed = os.clock() - FlyData.Settings.LastOnGround
-                                local timeLeft = math.max(2.5 - elapsed, 0)
-                                Label.Text = string.format("%.1f", timeLeft)
-                                PB.Size = UDim2.new(timeLeft / 2.5, 0, 1, 0)
-                            else
-                                Label.Text = string.format("%.1f", 2.5)
-                                PB.Size = UDim2.new(1, 0, 1, 0)
-                            end
-                        end
-                    until not self.Data.Enabled
-                end)
+                if Night.Mobile then
+                    pcall(function()
+                        local jumpButton = PG.TouchGui.TouchControlFrame.JumpButton
+                        table.insert(FlyData.Connections, jumpButton:GetPropertyChangedSignal('ImageRectOffset'):Connect(function()
+                            FlyData.Settings.VerticalValue = jumpButton.ImageRectOffset.X == 146 and 1 or 0
+                        end))
+                    end)
+                end
 
+                if FlyData.Settings.FlyTimer and not FlyData.FlyUi then
+                    FlyData.FlyUi = CreateTimerUi({StartTime = 2.5})
+                end
+
+                FlyData.Settings.LastOnGround = os.clock()
                 repeat
                     SpeedData.Allowed = false
                     if Functions.IsAlive() and FlyData.Allowed then
@@ -746,6 +756,15 @@ local FlyData = {
                         
                         if LP.Character.Humanoid.FloorMaterial ~= Enum.Material.Air then
                             FlyData.Settings.LastOnGround = os.clock()
+                            if FlyData.FlyUi then
+                                FlyData.FlyUi.Functions.Update(2.5, UDim2.fromScale(1, 1))
+                            end
+                        else
+                            if FlyData.FlyUi then
+                                local elapsed = os.clock() - FlyData.Settings.LastOnGround  
+                                local time = 2.5 - elapsed
+                                FlyData.FlyUi.Functions.Update(time, UDim2.fromScale(math.max(time, 0) / 2.5, 1))
+                            end
                         end
 
                         LP.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(MoveDir.X * (FlyData.Settings.Speed + SpeedMultiplier), YVelocityDev, MoveDir.Z * (FlyData.Settings.Speed + SpeedMultiplier))
@@ -757,7 +776,10 @@ local FlyData = {
                     task.wait()
                 until not self.Data.Enabled
             else
-                FlyUI.Enabled = false
+                if FlyData.FlyUi then
+                    FlyData.FlyUi.Functions.Destroy()
+                    FlyData.FlyUi = nil
+                end
                 SpeedData.Allowed = true
                 for i,v in FlyData.Connections do
                     v:Disconnect()
@@ -889,22 +911,32 @@ local FlyData = {
     })
 
     FlyData.Toggle.Functions.Settings.MiniToggle({
+        Name = "Timer UI",
+        Description = "A UI to show how long you have left in the air",
+        Default = true,
+        Flag = "FlyTimerUI",
+        Callback = function(self, callback)
+            FlyData.Settings.FlyTimer = callback
+            if FlyData.Toggle.Data.Enabled then
+                if FlyData.Settings.FlyTimer and not FlyData.FlyUi then
+                    FlyData.FlyUi = CreateTimerUi({StartTime = 2.5})
+                end
+            else
+                if FlyData.FlyUi then
+                    FlyData.FlyUi.Functions.Destroy()
+                    FlyData.FlyUi = nil
+                end
+            end
+        end
+    })
+
+    FlyData.Toggle.Functions.Settings.MiniToggle({
         Name = "TP Down",
         Description = "Teleports to the ground if you run out of fly time",
         Default = true,
         Flag = "FlyTPDown",
         Callback = function(self, callback)
             FlyData.Settings.TPDown = callback
-        end
-    })
-
-    FlyData.Toggle.Functions.Settings.MiniToggle({
-        Name = "Fly Time UI",
-        Description = "Shows a fly time UI",
-        Default = true,
-        Flag = "FlyTimeUI",
-        Callback = function(self, callback)
-            FlyData.Settings.FlyTimeUI = callback
         end
     })
 
@@ -1787,7 +1819,7 @@ local FindWeakest = function(bed : Instance)
     return weakest, lastval
 end
 
-local DamageBlock = function(block)
+local DamageBlock = function(block: Instance)
     local Position = GameData.Modules.BlockEngine:getBlockPosition(block.Position)
     if Position then
         local Response = GameData.Modules.BlockRemotes.Client:Get('DamageBlock'):CallServerAsync({
@@ -2767,10 +2799,17 @@ local GetNextSword = function()
 end
 
 local GetCurrentArmor = function()
-    local Armor = "leather_chestplate"
+    local Armor = ""
     for i,v in GameData.Modules.Store:getState().Bedwars.itemTiersPurchased do
         if tostring(v):find("_chestplate") then
             Armor = v
+        end
+    end
+    if Armor == "" then
+        for i,v in GameData.Modules.ArmorSets.BedWarsArmor do
+            if v[2] then
+                return v[2]
+            end
         end
     end
     return Armor
@@ -2778,12 +2817,12 @@ end
 
 local GetNextArmor = function()
     local Current = GetCurrentArmor()
-    for i,v in GameData.Modules.ArmorSets.BedWarsArmor do
-        if v[2] and v[2] == Current and GameData.Modules.ArmorSets.BedWarsArmor[i + 1] and GameData.Modules.ArmorSets.BedWarsArmor[i + 1][2] then
-            return GameData.Modules.ArmorSets.BedWarsArmor[i + 1]
+    for i,v in GameData.Modules.ArmorSets.BedwarsArmorChestPlates do
+        if v == Current and GameData.Modules.ArmorSets.BedwarsArmorChestPlates[i + 1] then
+            return GameData.Modules.ArmorSets.BedwarsArmorChestPlates[i + 1]
         end
     end
-    return
+    return "leather_chestplate"
 end
 
 (function()
@@ -2822,9 +2861,9 @@ end
                         end
 
                         if table.find(AutoBuyData.Settings.Items, "Armor") then
-                            local NextArmor = GetNextArmor()
-                            if NextArmor then
-                                local ShopData = GameData.Modules.Shop.getShopItem(NextArmor[2])
+                            local NextAmor = GetNextArmor()
+                            if NextAmor then
+                                local ShopData = GameData.Modules.Shop.getShopItem(NextAmor)
                                 if ShopData then
                                     local Currency = ShopData.currency
                                     local Price = ShopData.price
