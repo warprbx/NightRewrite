@@ -12,13 +12,6 @@ local Functions = Assets.Functions :: {
 
 local Noti = Assets.Notifications :: {Send: ({Description: string, Duration: number, Flag: string}) -> any}
 local Tabs = Night.Tabs.Tabs :: {
-    cloneref: (service: Instance) -> Instance, 
-    IsAlive: (Player: Player) -> boolean,
-    Notify: (Description: string, Duration: number, Flag: string | any) -> {Functions: {Remove: (RemoveAnimation: boolean) -> nil}}
-}
-
-local Noti = Assets.Notifications :: {Send: ({Description: string, Duration: number, Flag: string}) -> any}
-local Tabs = Night.Tabs.Tabs :: {
     Combat: {
         Functions: {NewModule: (
             {Name: string, Description: string, Icon: string | any, Default: boolean | false, Button: boolean | false, Flag: string, Callback: (self: {Data: {Enabled: boolean}}, Callback: boolean) -> any}
@@ -598,6 +591,55 @@ local SpeedData
     })
 end)();
 
+local PG = LP:WaitForChild("PlayerGui")
+
+local FlyUI = Instance.new("ScreenGui")
+FlyUI.Name = "FlyTimeBar"
+FlyUI.Parent = PG
+FlyUI.Enabled = false
+
+local BG = Instance.new("Frame")
+BG.Size = UDim2.new(0, 260, 0, 80)
+BG.Position = UDim2.new(0.5, -130, 0.55, 0)
+BG.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+BG.BorderSizePixel = 0
+BG.Parent = FlyUI
+
+local BGC = Instance.new("UICorner")
+BGC.CornerRadius = UDim.new(0, 14)
+BGC.Parent = BG
+
+local Label = Instance.new("TextLabel")
+Label.Size = UDim2.new(1, 0, 0.4, 0)
+Label.Position = UDim2.new(0, 0, 0.1, 0)
+Label.Text = "0.0"
+Label.Font = Enum.Font.GothamBold
+Label.TextSize = 22
+Label.TextColor3 = Color3.fromRGB(235, 235, 235)
+Label.BackgroundTransparency = 1
+Label.Parent = BG
+
+local PB_BG = Instance.new("Frame")
+PB_BG.Size = UDim2.new(1, -30, 0.25, 0)
+PB_BG.Position = UDim2.new(0, 15, 0.65, 0)
+PB_BG.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+PB_BG.BorderSizePixel = 0
+PB_BG.Parent = BG
+
+local PB_BGC = Instance.new("UICorner")
+PB_BGC.CornerRadius = UDim.new(0, 12)
+PB_BGC.Parent = PB_BG
+
+local PB = Instance.new("Frame")
+PB.Size = UDim2.new(1, 0, 1, 0)
+PB.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+PB.BorderSizePixel = 0
+PB.Parent = PB_BG
+
+local PBC = Instance.new("UICorner")
+PBC.CornerRadius = UDim.new(0, 12)
+PBC.Parent = PB
+
 local FlyData = {
     Settings = {
         Speed = 23,
@@ -611,6 +653,7 @@ local FlyData = {
         LastHit = os.clock(),
         UseBalloons = false,
         DeflateBalloon = false,
+        FlyTimeUI = false,
         Vertical = false,
         VerticalValue = 0,
         VericalAmount = 30,
@@ -648,6 +691,24 @@ local FlyData = {
                 end))
 
                 FlyData.Settings.LastOnGround = os.clock()
+                task.spawn(function()
+                    repeat
+                        task.wait()
+                        FlyUI.Enabled = self.Data.Enabled and FlyData.Settings.FlyTimeUI
+                        if Functions.IsAlive() and FlyData.Settings.FlyTimeUI then
+                            if LP.Character.Humanoid.FloorMaterial == Enum.Material.Air then
+                                local elapsed = os.clock() - FlyData.Settings.LastOnGround
+                                local timeLeft = math.max(2.5 - elapsed, 0)
+                                Label.Text = string.format("%.1f", timeLeft)
+                                PB.Size = UDim2.new(timeLeft / 2.5, 0, 1, 0)
+                            else
+                                Label.Text = string.format("%.1f", 2.5)
+                                PB.Size = UDim2.new(1, 0, 1, 0)
+                            end
+                        end
+                    until not self.Data.Enabled
+                end)
+
                 repeat
                     SpeedData.Allowed = false
                     if Functions.IsAlive() and FlyData.Allowed then
@@ -665,7 +726,7 @@ local FlyData = {
                                 end
                             end
                             if not balloons or 1 > balloons then
-                                if os.clock() - FlyData.Settings.LastOnGround >= 2.5 then
+                                if os.clock() - FlyData.Settings.LastOnGround >= 2 then
                                     if FlyData.Settings.TPDown then
                                         local RayPrams = RaycastParams.new()
                                         RayPrams.FilterType = Enum.RaycastFilterType.Include
@@ -697,6 +758,7 @@ local FlyData = {
                     task.wait()
                 until not self.Data.Enabled
             else
+                FlyUI.Enabled = false
                 SpeedData.Allowed = true
                 for i,v in FlyData.Connections do
                     v:Disconnect()
@@ -834,6 +896,16 @@ local FlyData = {
         Flag = "FlyTPDown",
         Callback = function(self, callback)
             FlyData.Settings.TPDown = callback
+        end
+    })
+
+    FlyData.Toggle.Functions.Settings.MiniToggle({
+        Name = "Fly Time UI",
+        Description = "Shows a fly time UI",
+        Default = true,
+        Flag = "FlyTimeUI",
+        Callback = function(self, callback)
+            FlyData.Settings.FlyTimeUI = callback
         end
     })
 
@@ -1716,7 +1788,7 @@ local FindWeakest = function(bed : Instance)
     return weakest, lastval
 end
 
-local DamageBlock = function(block: Instance)
+local DamageBlock = function(block)
     local Position = GameData.Modules.BlockEngine:getBlockPosition(block.Position)
     if Position then
         local Response = GameData.Modules.BlockRemotes.Client:Get('DamageBlock'):CallServerAsync({
@@ -2696,7 +2768,7 @@ local GetNextSword = function()
 end
 
 local GetCurrentArmor = function()
-    local Armor = ""
+    local Armor = "leather_chestplate"
     for i,v in GameData.Modules.Store:getState().Bedwars.itemTiersPurchased do
         if tostring(v):find("_chestplate") then
             Armor = v
@@ -2751,9 +2823,9 @@ end
                         end
 
                         if table.find(AutoBuyData.Settings.Items, "Armor") then
-                            local NextAmor = GetNextArmor()
-                            if NextAmor then
-                                local ShopData = GameData.Modules.Shop.getShopItem(NextAmor[2])
+                            local NextArmor = GetNextArmor()
+                            if NextArmor then
+                                local ShopData = GameData.Modules.Shop.getShopItem(NextArmor[2])
                                 if ShopData then
                                     local Currency = ShopData.currency
                                     local Price = ShopData.price
