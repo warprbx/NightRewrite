@@ -420,7 +420,9 @@ do
             end
 
             NotificationData.Objects.Notification:Destroy()
-            Night.Notifications.Active[flag] = nil
+            if Night and Night.Notifications and Night.Notifications.Active then
+                Night.Notifications.Active[flag] = nil
+            end
             table.clear(NotificationData)
         end
         
