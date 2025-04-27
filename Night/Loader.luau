@@ -197,7 +197,7 @@ end
 task.wait(0.15)
 Assets.Notifications.Send({
     Description = "Check out premium tab! Some modules were added. Join https://discord.gg/PYVuXbZ7bV for support",
-    Duration = math.huge,
+    Duration = 5,
     Flag = "discordnoti"
 })
 Night.Loaded = true
