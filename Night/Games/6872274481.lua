@@ -121,6 +121,7 @@ local UIS = Functions.cloneref(game:GetService("UserInputService")) :: UserInput
 local RS = Functions.cloneref(game:GetService("RunService")) :: RunService
 local LP = Plrs.LocalPlayer
 local Cam = WS.CurrentCamera
+local PG = Functions.cloneref(LP:WaitForChild("PlayerGui")) :: PlayerGui
 
 Functions.Notify = function(Description: string, Duration: number, Flag: string | any)
     if Description == nil or not tonumber(Duration) then return "Failed to send, make sure you have a description and a valid duration" end
@@ -590,8 +591,6 @@ local SpeedData
         end
     })
 end)();
-
-local PG = LP:WaitForChild("PlayerGui")
 
 local FlyUI = Instance.new("ScreenGui")
 FlyUI.Name = "FlyTimeBar"
