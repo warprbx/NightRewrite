@@ -982,83 +982,85 @@ local FlyData = {
             FlyData.Settings.DamageBoostTime = callback
         end
     }))
-end)();
+end)()
+
+local KillAuraData = {
+    Settings = {
+        Range = 18,
+        ChargeTime = 0.4,
+        MaxAngle = 360,
+        Prediction = 15,
+        WallCheck = false,
+        LastSwingTimeEnabled = false,
+        RequireMouseDown = false,
+        MouseDown = false,
+        HandCheck = false,
+        Swing = false,
+        OnSwingDelay = false,
+        SwingDelay = 0,
+        Delay = 0,
+        AutomaticallySwitch = false,
+        Visuals = {
+            Highlight = false,
+            HighlightColor = {R = 22, G = 59, B = 228},
+            HightLightTransparency = 0.5,
+            Highlights = {},
+            Particles = false,
+            ParticleColor = {Start = {R = 100, G = 150, B = 235}, End = {R = 0, G = 0, B = 140}},
+            CustomAnim = false,
+            PickedAnimation = "Air"
+        }
+    },
+    anim = {
+        pos = nil,
+        playing = false,
+        oldanim = nil,
+        old = Cam.Viewmodel.RightHand.RightWrist.C0,
+        main = {
+            Night = {
+                {Pos = {X = 0.7, Y = -0.7, Z = 0.65, Angle = CFrame.Angles(math.rad(-70), math.rad(60), math.rad(-70))}, Dur = 0.15},
+                {Pos = {X = 0.5, Y = -0.7, Z = -0.3, Angle = CFrame.Angles(math.rad(-120), math.rad(70), math.rad(-50))}, Dur = 0.15}
+            },
+            Smooth = {
+                {Pos = {X = -0.01, Y = -0.3, Z = -1.01, Angle = CFrame.Angles(math.rad(-35), math.rad(90), math.rad(-90))}, Dur = 0.45},
+                {Pos = {X = -0.01, Y = -0.3, Z = -1.01, Angle = CFrame.Angles(math.rad(-35), math.rad(70), math.rad(-90))}, Dur = 0.45},
+                {Pos = {X = -0.01, Y = -0.3, Z = 0.4, Angle = CFrame.Angles(math.rad(-35), math.rad(70), math.rad(-90))}, Dur = 0.32},
+            },
+            Funny = {
+                {Pos = {X = 0.8, Y = 10.7, Z = 3.6, Angle = CFrame.Angles(math.rad(-16), math.rad(60), math.rad(-80))}, Dur = 0.1},
+                {Pos = {X = 5.7, Y = -1.7, Z = 5.6, Angle = CFrame.Angles(math.rad(-16), math.rad(60), math.rad(-80))}, Dur = 0.15},
+                {Pos = {X = 2.95, Y = -5.06, Z = -6.25, Angle = CFrame.Angles(math.rad(-180), math.rad(60), math.rad(-80))}, Dur = 0.15},
+            },
+            Stand = {
+                {Pos = {X = 0.7, Y = -0.7, Z = 0.6, Angle = CFrame.Angles(math.rad(-30), math.rad(50), math.rad(-90))}, Dur = 0.1}
+            },
+            Air = {
+                {Pos = {X = 1.2, Y = -1.5, Z = -1, Angle = CFrame.Angles(math.rad(305), math.rad(55), math.rad(140))}, Dur = 0.2},
+                {Pos = {X = 1.2, Y = -1.5, Z = -1.2, Angle = CFrame.Angles(math.rad(200), math.rad(55), math.rad(230))}, Dur = 0.15},
+            },
+            Hit = {
+                {Pos = {X = 0, Y = 0, Z = -0.7, Angle = CFrame.Angles(math.rad(-60), math.rad(50), math.rad(-60))}, Dur = 0.12},
+                {Pos = {X = 0, Y = -0.35, Z = -0.7, Angle = CFrame.Angles(math.rad(-150), math.rad(60), math.rad(15))}, Dur = 0.2},
+            },
+            Rise = {
+                {Pos = {X = 1, Y = 0, Z = 0, Angle = CFrame.Angles(math.rad(-40), math.rad(40), math.rad(-80))}, Dur = 0.15},
+                {Pos = {X = 1, Y = 0, Z = -0.4, Angle = CFrame.Angles(math.rad(-80), math.rad(40), math.rad(-70))}, Dur = 0.17},
+            },
+            Moon = {
+                {Pos = {X = 0.85, Y = -0.8, Z = 0.6, Angle = CFrame.Angles(math.rad(-40), math.rad(70), math.rad(-90))}, Dur = 0.15},
+                {Pos = {X = 0.5, Y = -0.6, Z = 0.6, Angle = CFrame.Angles(math.rad(-50), math.rad(50), math.rad(-100))}, Dur = 0.12},
+            },
+            Lunar = {
+                {Pos = {X = 0.3, Y = 0, Z = -1.5, Angle = CFrame.Angles(math.rad(120), math.rad(120), math.rad(140))}, Dur = 0.2},
+                {Pos = {X = 0, Y = -0.3, Z = -1.7, Angle = CFrame.Angles(math.rad(30), math.rad(120), math.rad(190))}, Dur = 0.2},
+            }
+        }
+    },
+    Connections = {},
+    Attacking = false
+}
 
 (function()
-    local KillAuraData = {
-        Settings = {
-            Range = 18,
-            MaxAngle = 360,
-            Prediction = 15,
-            WallCheck = false,
-            LastSwingTimeEnabled = false,
-            RequireMouseDown = false,
-            MouseDown = false,
-            HandCheck = false,
-            Swing = false,
-            OnSwingDelay = false,
-            SwingDelay = 0,
-            Delay = 0,
-            AutomaticallySwitch = false,
-            Visuals = {
-                Highlight = false,
-                HighlightColor = {R = 22, G = 59, B = 228},
-                HightLightTransparency = 0.5,
-                Highlights = {},
-                Particles = false,
-                ParticleColor = {Start = {R = 100, G = 150, B = 235}, End = {R = 0, G = 0, B = 140}},
-                CustomAnim = false,
-                PickedAnimation = "Air"
-            }
-        },
-        anim = {
-            pos = nil,
-            playing = false,
-            oldanim = nil,
-            old = Cam.Viewmodel.RightHand.RightWrist.C0,
-            main = {
-                Night = {
-                    {Pos = {X = 0.7, Y = -0.7, Z = 0.65, Angle = CFrame.Angles(math.rad(-70), math.rad(60), math.rad(-70))}, Dur = 0.15},
-                    {Pos = {X = 0.5, Y = -0.7, Z = -0.3, Angle = CFrame.Angles(math.rad(-120), math.rad(70), math.rad(-50))}, Dur = 0.15}
-                },
-                Smooth = {
-                    {Pos = {X = -0.01, Y = -0.3, Z = -1.01, Angle = CFrame.Angles(math.rad(-35), math.rad(90), math.rad(-90))}, Dur = 0.45},
-                    {Pos = {X = -0.01, Y = -0.3, Z = -1.01, Angle = CFrame.Angles(math.rad(-35), math.rad(70), math.rad(-90))}, Dur = 0.45},
-                    {Pos = {X = -0.01, Y = -0.3, Z = 0.4, Angle = CFrame.Angles(math.rad(-35), math.rad(70), math.rad(-90))}, Dur = 0.32},
-                },
-                Funny = {
-                    {Pos = {X = 0.8, Y = 10.7, Z = 3.6, Angle = CFrame.Angles(math.rad(-16), math.rad(60), math.rad(-80))}, Dur = 0.1},
-                    {Pos = {X = 5.7, Y = -1.7, Z = 5.6, Angle = CFrame.Angles(math.rad(-16), math.rad(60), math.rad(-80))}, Dur = 0.15},
-                    {Pos = {X = 2.95, Y = -5.06, Z = -6.25, Angle = CFrame.Angles(math.rad(-180), math.rad(60), math.rad(-80))}, Dur = 0.15},
-                },
-                Stand = {
-                    {Pos = {X = 0.7, Y = -0.7, Z = 0.6, Angle = CFrame.Angles(math.rad(-30), math.rad(50), math.rad(-90))}, Dur = 0.1}
-                },
-                Air = {
-                    {Pos = {X = 1.2, Y = -1.5, Z = -1, Angle = CFrame.Angles(math.rad(305), math.rad(55), math.rad(140))}, Dur = 0.2},
-                    {Pos = {X = 1.2, Y = -1.5, Z = -1.2, Angle = CFrame.Angles(math.rad(200), math.rad(55), math.rad(230))}, Dur = 0.15},
-                },
-                Hit = {
-                    {Pos = {X = 0, Y = 0, Z = -0.7, Angle = CFrame.Angles(math.rad(-60), math.rad(50), math.rad(-60))}, Dur = 0.12},
-                    {Pos = {X = 0, Y = -0.35, Z = -0.7, Angle = CFrame.Angles(math.rad(-150), math.rad(60), math.rad(15))}, Dur = 0.2},
-                },
-                Rise = {
-                    {Pos = {X = 1, Y = 0, Z = 0, Angle = CFrame.Angles(math.rad(-40), math.rad(40), math.rad(-80))}, Dur = 0.15},
-                    {Pos = {X = 1, Y = 0, Z = -0.4, Angle = CFrame.Angles(math.rad(-80), math.rad(40), math.rad(-70))}, Dur = 0.17},
-                },
-                Moon = {
-                    {Pos = {X = 0.85, Y = -0.8, Z = 0.6, Angle = CFrame.Angles(math.rad(-40), math.rad(70), math.rad(-90))}, Dur = 0.15},
-                    {Pos = {X = 0.5, Y = -0.6, Z = 0.6, Angle = CFrame.Angles(math.rad(-50), math.rad(50), math.rad(-100))}, Dur = 0.12},
-                },
-                Lunar = {
-                    {Pos = {X = 0.3, Y = 0, Z = -1.5, Angle = CFrame.Angles(math.rad(120), math.rad(120), math.rad(140))}, Dur = 0.2},
-                    {Pos = {X = 0, Y = -0.3, Z = -1.7, Angle = CFrame.Angles(math.rad(30), math.rad(120), math.rad(190))}, Dur = 0.2},
-                }
-            }
-        },
-        Connections = {}
-    }
-
     KillAuraData.Toggle = Tabs.Combat.Functions.NewModule({
         Name = "KillAura",
         Description = "Automatically attacks enemies near you",
@@ -1087,10 +1089,12 @@ end)();
                     return KillAuraData.anim.oldanim(...)
                 end
 
+                local Timer = 0
                 repeat
                     task.wait(0.0025)
                     local NearestEntity = GetNearestEntity()
                     if NearestEntity.Entity and KillAuraData.Settings.Range >= NearestEntity.Distance and GameData.Modules.Remotes:Get(HitRemoteName) then
+                        KillAuraData.Attacking = true
                         local Sword = GetBestSword()
                         if Sword.Sword and Sword.Sword.tool then
                             local CurrentItem = GetInventory().hand 
@@ -1217,8 +1221,10 @@ end)();
                                     lastswing = GameData.Controllers.Sword.lastSwingServerTimeDelta
                                 end
 
+                                if (tick() - Timer) < (KillAuraData.Settings.ChargeTime >= 0.1 and KillAuraData.Settings.ChargeTime - 0.1 or KillAuraData.Settings.ChargeTime) then continue end
+
                                 local calc = KillAuraData.Settings.Prediction / 30
-                                local selfPos, dir = (((LP.Character.HumanoidRootPart.Position - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.05)) > 0) and ((LP.Character.HumanoidRootPart.Position - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.1))) or 0) * CFrame.lookAt(LP.Character.HumanoidRootPart.Position, EntityPos).LookVector + LP.Character.HumanoidRootPart.Position, (EntityPos - Cam.CFrame.Position)                            
+                                local selfPos, dir = (((LP.Character.HumanoidRootPart.Position - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.05)) > 0) and ((LP.Character.HumanoidRootPart.Position - EntityPos).Magnitude - (KillAuraData.Settings.Prediction - (calc + 0.1))) or 0) * CFrame.lookAt(LP.Character.HumanoidRootPart.Position, EntityPos).LookVector + LP.Character.HumanoidRootPart.Position, (EntityPos - Cam.CFrame.Position)
                                 GameData.Modules.Remotes:Get(HitRemoteName):SendToServer({
                                     weapon = Sword.Sword.tool,
                                     entityInstance = NearestEntity.Entity,
@@ -1234,6 +1240,7 @@ end)();
                                     }
                                 })
 
+                                Timer = tick()
                                 GameData.Controllers.Sword.lastSwingServerTimeDelta = WS:GetServerTimeNow() -  GameData.Controllers.Sword.lastSwingServerTime
                                 GameData.Controllers.Sword.lastSwingServerTime = WS:GetServerTimeNow()
                                 
@@ -1261,6 +1268,7 @@ end)();
                             end
                         end
                     else
+                        KillAuraData.Attacking = false
                         if KillAuraData.anim.old then
                             task.spawn(function()
                                 repeat task.wait() until not KillAuraData.anim.playing
@@ -1303,6 +1311,19 @@ end)();
         end
     })
 
+    KillAuraData.Toggle.Functions.Settings.Slider({
+        Name = "Charge Time",
+        Description = "Time to charge before attacking",
+        Min = 0,
+        Decimals = 0.1,
+        Max = 0.7,
+        Default = 0.5,
+        Flag = "KillAuraChargeTime",
+        Callback = function(self, callback)
+            KillAuraData.Settings.ChargeTime = callback
+        end
+    })
+
     KillAuraData.Toggle.Functions.Settings.MiniToggle({
         Name = "Use LastSwing",
         Description = "Uses real last swing time, does less damage",
@@ -1333,7 +1354,7 @@ end)();
         Description = "Delay until another swing takes place",
         Min = 0,
         Decimals = 1,
-        Max = 5,
+        Max = 0.5,
         Default = 0,
         Hide = true,
         Flag = "KillAuraSwingDelay",
@@ -1347,7 +1368,7 @@ end)();
         Description = "Delay after every hit",
         Min = 0,
         Decimals = 1,
-        Max = 5,
+        Max = 0.5,
         Default = 0,
         Flag = "KillAuraDelay",
         Callback = function(self, callback)
@@ -1545,7 +1566,11 @@ end)();
             end
         end
     }))
-end)();
+end)()
+
+local groundRay = RaycastParams.new()
+groundRay.FilterType = Enum.RaycastFilterType.Include
+groundRay.FilterDescendantsInstances = {workspace:WaitForChild("Map")}
 
 (function()
     local NoFallData = {
@@ -1570,9 +1595,6 @@ end)();
                     repeat
                         if Functions.IsAlive() then
                             if NoFallData.settings.mode == "Smooth" then
-                                local groundRay = RaycastParams.new()
-                                groundRay.FilterType = Enum.RaycastFilterType.Include
-                                groundRay.FilterDescendantsInstances = {workspace:WaitForChild("Map")}
                                 local ground = WS:Raycast(LP.Character.HumanoidRootPart.Position, Vector3.new(0, -1000, 0), groundRay)
                                 if LP.Character.Humanoid:GetState() == Enum.HumanoidStateType.Freefall then
                                     task.spawn(function()
@@ -2805,21 +2827,22 @@ local GetCurrentArmor = function()
             Armor = v
         end
     end
-    if Armor == "" then
-        for i,v in GameData.Modules.ArmorSets.BedWarsArmor do
-            if v[2] then
-                return v[2]
-            end
-        end
-    end
     return Armor
 end
 
 local GetNextArmor = function()
     local Current = GetCurrentArmor()
-    for i,v in GameData.Modules.ArmorSets.BedwarsArmorChestPlates do
-        if v == Current and GameData.Modules.ArmorSets.BedwarsArmorChestPlates[i + 1] then
-            return GameData.Modules.ArmorSets.BedwarsArmorChestPlates[i + 1]
+    if Current ~= "" then
+        for i,v in GameData.Modules.ArmorSets.BedwarsArmorChestPlates do
+            if v == Current and GameData.Modules.ArmorSets.BedwarsArmorChestPlates[i + 1] then
+                return GameData.Modules.ArmorSets.BedwarsArmorChestPlates[i + 1]
+            end
+        end
+    else
+        for i,v in GameData.Modules.ArmorSets.BedWarsArmor do
+            if v[2] then
+                return v[2]
+            end
         end
     end
     return "leather_chestplate"
@@ -3037,7 +3060,7 @@ local FireProjectile = function(Tool: {tool: any | Instance, itemType: string}, 
                 shotId = HttpService:GenerateGUID(),
                 drawDurationSec = 1,
             },
-            WS:GetServerTimeNow()
+            workspace:GetServerTimeNow()
         )
     end
     return
@@ -3047,28 +3070,34 @@ end
     local LongJumpData = {
         Settings = {
             Speed = 70,
-            Timer = 1.2
+            Timer = 1.5,
+            Height = 10,
+            NoStrafe = false,
+            Cam = false,
+            Disable = false,
+            CombatCheck = false,
+            WallCheck = false
         },
-        Connections = {},
+        Connections = {}
     }
 
     LongJumpData.Toggle = Tabs.Movement.Functions.NewModule({
         Name = "LongJump",
-        Description = "Jump further at speeds using a fireball",
-        Flag = "LongJump",
+        Description = "Makes you jump far, fast, using a fireball.",
         Icon = "rbxassetid://94454897188777",
-        Callback = function(self, callback)
-            if callback then
+        Flag = "LongJump",
+        Callback = function(self, State)
+            if State then
                 if not Functions.IsAlive() then
                     task.wait(0.3)
-                    Functions.Notify("You cant use this while your dead", 2.5)
+                    Functions.Notify("You can't use this while you're dead", 2.5)
                     self.Functions.Toggle(false, false, false, true, true)
                     return
                 end
 
-                SpeedData.Allowed = false
-                FlyData.Allowed = false
+                SpeedData.Allowed, FlyData.Allowed = false, false
                 LP.Character.HumanoidRootPart.Anchored = true
+
                 local Fireball = GetItemType("fireball", false, false)
                 if not Fireball or not Fireball.Item or not Fireball.Item.tool then
                     task.wait(0.3)
@@ -3077,52 +3106,84 @@ end
                     return
                 end
 
-                local RayPrams = RaycastParams.new()
-                RayPrams.FilterType = Enum.RaycastFilterType.Include
-                RayPrams.FilterDescendantsInstances = CS:GetTagged("block")
-                local Ground = WS:Raycast(LP.Character.HumanoidRootPart.Position, Vector3.new(0, -1000, 0), RayPrams)
-                if not Ground or Ground and LP:DistanceFromCharacter(Ground.Position) > 5 then
+                local RayParams = RaycastParams.new()
+                RayParams.FilterType = Enum.RaycastFilterType.Include
+                RayParams.FilterDescendantsInstances = CS:GetTagged("block")
+
+                local Ground = workspace:Raycast(LP.Character.HumanoidRootPart.Position, Vector3.new(0, -1000, 0), RayParams)
+                if not Ground or (Ground and LP:DistanceFromCharacter(Ground.Position) > 5) then
                     task.wait(0.3)
-                    Functions.Notify("Your not on ground, disabled longjump", 2.5)
+                    Functions.Notify("You're not on ground, disabled LongJump", 2.5)
                     self.Functions.Toggle(false, false, false, true, true)
                     return
                 end
 
                 local CurrentItem = GetInventory().hand
                 GameData.Modules.Remotes:Get("SetInvItem"):CallServerAsync({
-                    ["hand"] = Fireball.Item.tool
+                    hand = Fireball.Item.tool
                 })
 
                 local CanRun = false
-                LongJumpData.Connections.ConnectionD = GameData.Events.Damage.Event:Connect(function(Damage: {Player: Instance, DamageType: number})  
+                LongJumpData.Connections.Damage = GameData.Events.Damage.Event:Connect(function(Damage: {Player: Instance, DamageType: number})
                     if Damage.Player == LP.Character and Damage.DamageType == GameData.Modules.DamageType.TNT then
+                        task.wait(0.1)
                         CanRun = true
-                        LongJumpData.Connections.ConnectionD:Disconnect()
+                        LongJumpData.Connections.Damage:Disconnect()
                     end
                 end)
+
                 FireProjectile(Fireball.Item, LP.Character.PrimaryPart.Position - Vector3.new(0, 2, 0), Vector3.new(0, -40, 0))
+
                 repeat task.wait() until CanRun
-                
+
                 if CurrentItem and CurrentItem.tool then
                     GameData.Modules.Remotes:Get("SetInvItem"):CallServerAsync({
-                        ["hand"] = CurrentItem.tool
+                        hand = CurrentItem.tool
                     })
                 end
 
-                local start = os.clock()
+                local Velocity = LongJumpData.Settings.Height + 5
+                local LookVector = LP.Character.PrimaryPart.CFrame.LookVector
+                local StartTime = os.clock()
 
-                LongJumpData.Connections.Main = RS.Heartbeat:Connect(function(dt)
-                    if not self.Data.Enabled or (os.clock() - start >= LongJumpData.Settings.Timer) then 
+                LP.Character.HumanoidRootPart.Anchored = false
+
+                task.spawn(function()
+                    repeat
+                        task.wait()
+                        Velocity -= 0.1
+                        LP.Character.PrimaryPart.AssemblyLinearVelocity = Vector3.new(0, Velocity, 0)
+                    until not self.Data.Enabled
+                end)
+
+                LongJumpData.Connections.Heartbeat = RS.Heartbeat:Connect(function(DT)
+                    if not self.Data.Enabled or (os.clock() - StartTime >= LongJumpData.Settings.Timer) then
                         if self.Data.Enabled then
                             self.Functions.Toggle(false, false, false, true, true)
                         end
-                        return 
+                        return
                     end
 
-                    LP.Character.PrimaryPart.CFrame += LP.Character.PrimaryPart.CFrame.LookVector * dt * LongJumpData.Settings.Speed
+                    if LongJumpData.Settings.Cam then
+                        LookVector = workspace.CurrentCamera.CFrame.LookVector
+                    end
+
+                    local MoveDirection = LongJumpData.Settings.NoStrafe and LookVector or LP.Character.PrimaryPart.CFrame.LookVector
+                    local Speed = LongJumpData.Settings.CombatCheck and KillAuraData.Attacking and (LongJumpData.Settings.Speed / 2) or LongJumpData.Settings.Speed
+
+                    local RayParams = RaycastParams.new()
+                    RayParams.FilterType = Enum.RaycastFilterType.Exclude
+                    RayParams.FilterDescendantsInstances = {LP.Character}
+
+                    local WallHit = workspace:Raycast(LP.Character.PrimaryPart.Position, MoveDirection * (Speed * DT + 1), RayParams)
+                    if not WallHit and LongJumpData.Settings.WallCheck then
+                        LP.Character.PrimaryPart.CFrame += MoveDirection * DT * Speed
+                    end
                 end)
             else
-                for i,v in LongJumpData.Connections do v:Disconnect() end
+                for _, Connection in next, LongJumpData.Connections do
+                    Connection:Disconnect()
+                end
                 table.clear(LongJumpData.Connections)
 
                 FlyData.Allowed = true
@@ -3136,13 +3197,13 @@ end
 
     LongJumpData.Toggle.Functions.Settings.Slider({
         Name = "Speed",
-        Description = "How fast you go",
+        Description = "How fast to go",
         Min = 40,
         Max = 70,
         Default = 70,
         Flag = "LongJumpSpeed",
-        Callback = function(self, callback)
-            LongJumpData.Settings.Speed = callback
+        Callback = function(self, Value)
+            LongJumpData.Settings.Speed = Value
         end
     })
 
@@ -3151,11 +3212,62 @@ end
         Description = "How long you jump for",
         Min = 0.1,
         Max = 1.5,
-        Default = 1.2,
+        Default = 1.5,
         Decimals = 1,
         Flag = "LongJumpTimer",
-        Callback = function(self, callback)
-            LongJumpData.Settings.Timer = callback
+        Callback = function(self, Value)
+            LongJumpData.Settings.Timer = Value
+        end
+    })
+
+    LongJumpData.Toggle.Functions.Settings.MiniToggle({
+        Name = "Combat Check",
+        Description = "Slows down when you're in combat",
+        Flag = "LongJumpCombatCheck",
+        Default = true,
+        Callback = function(self, Value)
+            LongJumpData.Settings.CombatCheck = Value
+        end
+    })
+
+    LongJumpData.Toggle.Functions.Settings.MiniToggle({
+        Name = "Wall Check",
+        Description = "Slows down when you hit a wall",
+        Flag = "LongJumpWallCheck",
+        Default = true,
+        Callback = function(self, Value)
+            LongJumpData.Settings.WallCheck = Value
+        end
+    })
+
+    LongJumpData.Toggle.Functions.Settings.MiniToggle({
+        Name = "No Strafe",
+        Description = "Disables strafing to prevent lagbacks",
+        Flag = "LongJumpNoStrafe",
+        Default = true,
+        Callback = function(self, Value)
+            LongJumpData.Settings.NoStrafe = Value
+        end
+    })
+
+    LongJumpData.Toggle.Functions.Settings.MiniToggle({
+        Name = "Camera Direction",
+        Description = "Uses camera direction instead of strafe direction",
+        Flag = "LongJumpCameraDirection",
+        Callback = function(self, Value)
+            LongJumpData.Settings.Cam = Value
+        end
+    })
+
+    LongJumpData.Toggle.Functions.Settings.Slider({
+        Name = "Height",
+        Description = "Height to start at which slowly decreases",
+        Min = 1,
+        Max = 30,
+        Default = 10,
+        Flag = "LongJumpHeight",
+        Callback = function(self, Value)
+            LongJumpData.Settings.Height = Value
         end
     })
 end)()
@@ -3289,4 +3401,58 @@ end
             AutoKit.Settings.KitRanges.MetalDetector = value
         end
     })
-end)()
+end)();
+
+(function()
+    local NoSlow = {
+        Settings = {
+            Speed = false,
+            Allow = false
+        },
+        Old = nil
+    }
+
+    NoSlow.Toggle = Tabs.Movement.Functions.NewModule({
+        Name = "NoSlow",
+        Description = "Prevents items from slowing you down",
+        Icon = "rbxassetid://89310006048659",
+        Flag = "NoSlow",
+        Callback = function(self, callback)
+            local modifier = GameData.Controllers.Sprint:getMovementStatusModifier()
+            if callback and hookfunction then
+                NoSlow.Old = hookfunction(modifier.addModifier, function(self, tab)
+                    if tab.moveSpeedMultiplier and tab.blockSprint then
+                        tab.moveSpeedMultiplier = NoSlow.Settings.Speed and 1 or 0.35
+                        tab.blockSprint = not NoSlow.Settings.Allow
+                    end
+                    return NoSlow.Old(self, tab)
+                end)
+            else
+                if NoSlow.Old and hookfunction then
+                    hookfunction(modifier.addModifier, NoSlow.Old)
+                    NoSlow.Old = nil
+                end
+            end
+        end
+    })
+
+    NoSlow.Toggle.Functions.Settings.MiniToggle({
+        Name = "Speed",
+        Description = "Modifies the speed multiplier",
+        Default = true,
+        Flag = "NoSlowSpeed",
+        Callback = function(self, callback)
+            NoSlow.Settings.Speed = callback
+        end
+    })
+
+    NoSlow.Toggle.Functions.Settings.MiniToggle({
+        Name = "Allow Sprint",
+        Description = "Allows sprinting while holding items",
+        Default = true,
+        Flag = "NoSlowAllowSprint",
+        Callback = function(self, callback)
+            NoSlow.Settings.Allow = callback
+        end
+    })
+end)();
