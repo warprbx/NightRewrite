@@ -122,26 +122,42 @@ do
         end
         return plr, lastpos
     end
-    Assets.Functions.GetNearestPlrToMouse = function(Data: {Team: boolean, Limit: number, Exclude: {}})
+    Assets.Functions.GetNearestPlrToMouse = function(Data: {Team: boolean, Limit: number, Exclude: {}, Extras: {}})
         Data = {
             Team = Data and Data.Team or false,
             Limit = Data and Data.Limit or math.huge,
             Exclude = Data and Data.Exclude or {},
+            Extras = Data and Data.Extras or {}
         }
 
         local RData = {Player = nil, Distance = math.huge, PlayerDist = math.huge}
+        local Players = {}
         for i,v in plrs:GetPlayers() do
-            if Assets.Functions.IsAlive(v) and not table.find(Data.Exclude, v) then
+            if Assets.Functions.IsAlive(v) then
                 if Data.Team and v.Team ~= lp.Team or not Data.Team then
-                    local screenpos, onscreen = ws.CurrentCamera:WorldToScreenPoint(v.Character.HumanoidRootPart.Position)
+                    table.insert(Players, v.Character)
+                end
+            end
+        end
+
+        for i,v in Data.Extras do
+            table.insert(Players, v)
+        end
+
+        for i,v in Players do
+            if not table.find(Data.Exclude, v) then
+                local Part = v:FindFirstChild("HumanoidRootPart") or v.PrimaryPart
+                if Part then
+                    local screenpos, onscreen = ws.CurrentCamera:WorldToScreenPoint(Part.Position)
                     if screenpos and onscreen then
                         local mouse = lp:GetMouse()
                         local mousepos = mouse.Hit.Position
-                        local mag = (mousepos - v.Character.HumanoidRootPart.Position).Magnitude
-                        local plrdist = (v.Character.HumanoidRootPart.Position - lp.Character.HumanoidRootPart.Position).Magnitude
+                        local mag = (mousepos - Part.Position).Magnitude
+                        local plrdist = (Part.Position - Part.Position).Magnitude
                         if Data.Limit >= mag and RData.Distance >= mag and (RData.Distance == mag and RData.PlayerDist >= plrdist or RData.Distance ~= mag) then
                             RData = {
-                                Player = v :: Player,
+                                Player = plrs:GetPlayerFromCharacter(v) :: Player,
+                                Character = v,
                                 Distance = mag :: number,
                                 PlayerDist = plrdist :: number
                             }
