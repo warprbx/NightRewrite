@@ -155,6 +155,7 @@ repeat task.wait() until Knit and Cam:FindFirstChild("Viewmodel")
 local GameData = {
     Controllers = {
         Sword = Knit.Controllers.SwordController,
+        SetInvItem = Knit.Controllers.SetInvItem,
         Sprint = Knit.Controllers.SprintController,
         Balloon = Knit.Controllers.BalloonController,
         ViewModel = Knit.Controllers.ViewmodelController,
@@ -185,9 +186,12 @@ local GameData = {
         ShopPurchase = require(LP.PlayerScripts.TS.controllers.global.shop.api["purchase-item"]).shopPurchaseItem,
         Shop = require(Rep.TS.games.bedwars.shop['bedwars-shop']).BedwarsShop,
         ArmorSets = require(Rep.TS.games.bedwars['bedwars-armor-set']),
-        TeamUpgradeMeta = require(Rep.TS.games.bedwars["team-upgrade"]["team-upgrade-meta"])
+        TeamUpgradeMeta = require(Rep.TS.games.bedwars["team-upgrade"]["team-upgrade-meta"]),
+        Sound = require(Rep.rbxts_include.node_modules['@easy-games']['game-core'].out).SoundManager
     },
-    Remotes = {},
+    Remotes = {
+        SetInvItem = Rep.rbxts_include.node_modules['@rbxts'].net.out._NetManaged.SetInvItem
+    },
     Events = {
         Damage = Instance.new("BindableEvent"),
         Death = Instance.new("BindableEvent")
@@ -213,6 +217,10 @@ table.insert(Night.Connections, OnUninject.Event:Connect(function()
     table.clear(GameData.Events)
 end))
 
+local Materials = {}
+for _, v in next, Enum.Material:GetEnumItems() do
+    table.insert(Materials, v.Name)
+end
 
 local Hit = GameData.Controllers.Sword.sendServerRequest
 local SwordServerRequestConstants = debug.getconstants(Hit)
@@ -344,6 +352,17 @@ local GetBestSword = function()
         end
     end
     return Sword
+end
+
+local GetColor = function(input: string)
+	local split = string.split(input, ",")
+	if #split == 3 then
+		local r, g, b = tonumber(split[1]), tonumber(split[2]), tonumber(split[3])
+		if r and g and b then
+			return {R = r, G = g, B = b}
+		end
+	end
+    return {R = 0, G = 0, B = 0}
 end
 
 local scaleVector = function(vec, dist, height)
@@ -1492,12 +1511,9 @@ local KillAuraData = {
         Hide = true,
         Flag = "KillAuraHighlightColor",
         Callback = function(self, callback)
-            local split = string.split(callback, ',')
-            if #split == 3 then
-                local v1, v2, v3 = split[1]:gsub(' ', ''), split[2]:gsub(' ', ''), split[3]:gsub(' ', '')
-                if tonumber(v1) and tonumber(v2) and tonumber(v3) then
-                    KillAuraData.Settings.Visuals.HighlightColor = {R =tonumber(v1), G = tonumber(v2), B = tonumber(v3)}
-                end
+            local color = GetColor(callback)
+            if color then
+                KillAuraData.Settings.Visuals.HighlightColor = color
             end
         end
     }))
@@ -1540,12 +1556,9 @@ local KillAuraData = {
         Flag = "StartKillAuraParticleColor",
         Hide = true,
         Callback = function(self, callback)
-            local split = string.split(callback, ',')
-            if #split == 3 then
-                local v1, v2, v3 = split[1]:gsub(' ', ''), split[2]:gsub(' ', ''), split[3]:gsub(' ', '')
-                if tonumber(v1) and tonumber(v2) and tonumber(v3) then
-                    KillAuraData.Settings.Visuals.ParticleColor.Start = {R = tonumber(v1), G = tonumber(v2), B = tonumber(v3)}
-                end
+            local color = GetColor(callback)
+            if color then
+                KillAuraData.Settings.Visuals.ParticleColor.Start = color
             end
         end
     }))
@@ -1557,12 +1570,9 @@ local KillAuraData = {
         Flag = "EndKillAuraParticleColor",
         Hide = true,
         Callback = function(self, callback)
-            local split = string.split(callback, ',')
-            if #split == 3 then
-                local v1, v2, v3 = split[1]:gsub(' ', ''), split[2]:gsub(' ', ''), split[3]:gsub(' ', '')
-                if tonumber(v1) and tonumber(v2) and tonumber(v3) then
-                    KillAuraData.Settings.Visuals.ParticleColor.End = {R = tonumber(v1), G = tonumber(v2), B = tonumber(v3)}
-                end
+            local color = GetColor(callback)
+            if color then
+                KillAuraData.Settings.Visuals.ParticleColor.End = color
             end
         end
     }))
@@ -1841,7 +1851,7 @@ local FindWeakest = function(bed : Instance)
     return weakest, lastval
 end
 
-local DamageBlock = function(block: Instance)
+local DamageBlock = function(block)
     local Position = GameData.Modules.BlockEngine:getBlockPosition(block.Position)
     if Position then
         local Response = GameData.Modules.BlockRemotes.Client:Get('DamageBlock'):CallServerAsync({
@@ -3456,3 +3466,548 @@ end)();
         end
     })
 end)();
+
+(function()
+    local BanShield = {
+        Settings = {Mode = "Hook"},
+        Hook = nil
+    }
+
+    BanShield.Toggle = Tabs.Utility.Functions.NewModule({
+        Name = "BanShield",
+        Description = "Protects you against some remotes & detections",
+        Icon = "rbxassetid://109973937066813",
+        Flag = "BanShield",
+        Callback = function(self, callback)
+            if callback then
+                if BanShield.Settings.Mode == "Hook" then
+                    if not BanShield.Hook then
+                        BanShield.Hook = hookmetamethod(game, '__namecall', function(self, ...)
+                            if table.find({'reportPerformanceMetrics', 'AnalyticsReportEvent'}, self.Name) and self.Data.Enabled then
+                                return
+                            end
+                            return BanShield.Hook(self, ...)
+                        end)
+                    end
+                else
+                    local BanShieldRaw: table = getrawmetatable(game)
+                    setreadonly(BanShieldRaw, false)
+
+                    local OldBanShield = BanShieldRaw.__namecall
+                    BanShieldRaw.__namecall = newcclosure(function(self, ...)
+                        local Method: string = getnamecallmethod()
+                        local Args: {any} = {...}
+
+                        if (Method == "FireServer" or Method == "InvokeServer" or Method == "FireClient" or Method == "InvokeClient") and self.Data.Enabled then
+                            local Name: string = self.Name
+                            local TargetMethods: {[string]: boolean} = {
+                                reportPerformanceMetrics = true,
+                                AnalyticsReportEvent = true
+                            }
+
+                            local success, data = pcall(function()
+                                return self.Data and self.Data.Enabled
+                            end)
+
+                            if TargetMethods[Name] and success and data then
+                                return
+                            end
+                        end
+
+                        return OldBanShield(self, unpack(Args))
+                    end)
+
+                    setreadonly(BanShieldRaw, true)
+                end
+            end
+        end
+    })
+    BanShield.Toggle.Functions.Settings.Dropdown({
+        Name = "Mode",
+        Description = "Mode to block remotes",
+        Default = "Hook",
+        Options = {"Hook", "Raw"},
+        Flag = "BanShieldMode",
+        Callback = function(self, value)
+            BanShield.Settings.Mode = value
+        end
+    })
+end)()
+
+local AntiHit = {
+    Settings = {
+        Range = 23,
+        Height = 100,
+        Up = 0.25,
+        Down = 0.15,
+        Trans = 0,
+        UpModifier = 0.5,
+        DownModifier = 0.5,
+        Material = 'Neon',
+        Dynamic = false,
+        Color = {R = 0, G = 0, B = 140}
+    },
+    Clone = nil,
+    Connect = nil
+}
+
+local DestroyClone = function()
+    if AntiHit.Connect then
+        AntiHit.Connect:Disconnect()
+        AntiHit.Connect = nil
+    end
+
+    if AntiHit.Clone and AntiHit.Clone.Parent then
+        AntiHit.Clone:Destroy()
+        AntiHit.Clone = nil
+    end
+
+    Cam.CameraSubject = LP.Character.Humanoid
+end
+
+(function()
+    AntiHit.Toggle = Tabs.Player.Functions.NewModule({
+        Name = 'AntiHit',
+        Description = 'Makes it harder for others to hit you',
+        Icon = 'rbxassetid://80691470589875',
+        Flag = 'AntiHit',
+        Callback = function(self, callback)
+            if callback then
+                repeat
+                    AntiHit.Clone = nil
+                    AntiHit.Connect = nil
+                
+                    local target = GetNearestEntity()
+                    if target.Entity and target.Distance <= AntiHit.Settings.Range and Functions.IsAlive() then
+                        DestroyClone()
+
+                        LP.Character.Archivable = true
+                        AntiHit.Clone = LP.Character:Clone()
+                        AntiHit.Clone.Parent = workspace
+                        Cam.CameraSubject = AntiHit.Clone.Humanoid
+                
+                        for _, v in next, AntiHit.Clone:GetChildren() do
+                            if v:IsA('Accessory') then
+                                v.Handle.Transparency = 1
+                            elseif string.lower(v.ClassName):find('part') then
+                                v.Transparency = v.Name == 'HumanoidRootPart' and AntiHit.Settings.Trans or 1
+                
+                                if v.Name == 'HumanoidRootPart' then
+                                    v.Material = Enum.Material[AntiHit.Settings.Material]
+                                    v.Color = Color3.fromRGB(AntiHit.Settings.Color.R, AntiHit.Settings.Color.G, AntiHit.Settings.Color.B)
+                                end
+                
+                                if v.Name == 'Head' then
+                                    v:ClearAllChildren()
+                                end
+                            end
+                        end
+                
+                        local root = LP.Character.HumanoidRootPart
+                        local cloneRoot = AntiHit.Clone.HumanoidRootPart
+                        root.CFrame += Vector3.new(0, AntiHit.Settings.Height, 0)
+                
+                        AntiHit.Connect = RS.Heartbeat:Connect(function()
+                            if cloneRoot then
+                                cloneRoot.Position = Vector3.new(root.Position.X, cloneRoot.Position.Y, root.Position.Z)
+                            else
+                                DestroyClone()
+                            end
+                        end)
+
+                        local Health = LP.Character.Humanoid.Health or 100
+                        local TargetHealth = target.EntityData and target.EntityData.Health or 100
+
+                        local GoUp = AntiHit.Settings.Up
+                        local GoDown = AntiHit.Settings.Down
+
+                        if AntiHit.Settings.Dynamic then
+                            local diff: number = Health - TargetHealth
+                            if math.abs(diff) <= 5 then
+                                GoUp = AntiHit.Settings.Up
+                                GoDown = AntiHit.Settings.Down
+                            else
+                                if diff > 0 then
+                                    GoDown = AntiHit.Settings.Down + 0.2
+                                    GoUp = math.max(AntiHit.Settings.Up - 0.1, 0.1)
+                                else
+                                    GoDown = math.max(AntiHit.Settings.Down - 0.1, 0.1)
+                                    GoUp = math.max(AntiHit.Settings.Up + 0.2, 0.3)
+                                end
+                            end
+                        end
+                        
+                        task.wait(GoUp)
+                        root.CFrame = cloneRoot.CFrame
+                        DestroyClone()
+
+                        task.wait(GoDown + 0.05)
+                    elseif not Functions.IsAlive() then
+                        repeat task.wait() until Functions.IsAlive()
+                        task.wait(0.4)
+                    end
+
+                    task.wait()
+                until not self.Data.Enabled
+            else
+                DestroyClone()
+            end
+        end
+    })
+
+    AntiHit.Toggle.Functions.Settings.Slider({
+        Name = 'Range',
+        Description = 'Range to detect the player',
+        Min = 1,
+        Max = 18,
+        Default = 18,
+        Flag = 'AntiHitRange',
+        Callback = function(self, value)
+            AntiHit.Settings.Range = value
+        end
+    })
+
+    local AntiHitUp, AntiHitDown
+    AntiHit.Toggle.Functions.Settings.MiniToggle({
+        Name = 'Dynamic',
+        Description = 'Adjust time based on health difference',
+        Default = true,
+        Flag = 'AntiHitDynamic',
+        Callback = function(self, value)
+            AntiHit.Settings.Dynamic = value
+            task.spawn(function()
+                repeat task.wait() until AntiHitUp and AntiHitDown
+                AntiHitUp.Functions.SetVisiblity(value)
+                AntiHitDown.Functions.SetVisiblity(value)
+            end)
+        end
+    })
+
+    AntiHitUp = AntiHit.Toggle.Functions.Settings.Slider({
+        Name = 'Up Modifier',
+        Description = 'Adjusts how much more/less time you stay up based on health difference',
+        Min = 0,
+        Max = 2,
+        Default = 0.5,
+        Decimals = 2,
+        Hide = true,
+        Flag = 'AntiHitUpModifier',
+        Callback = function(self, value)
+            AntiHit.Settings.UpModifier = value
+        end
+    })
+    
+    AntiHitDown = AntiHit.Toggle.Functions.Settings.Slider({
+        Name = 'Down Modifier',
+        Description = 'Adjusts how much more/less time you stay down based on health difference',
+        Min = 0,
+        Max = 2,
+        Default = 0.5,
+        Decimals = 2,
+        Hide = true,
+        Flag = 'AntiHitDownModifier',
+        Callback = function(self, value)
+            AntiHit.Settings.DownModifier = value
+        end
+    })
+
+    AntiHit.Toggle.Functions.Settings.Slider({
+        Name = 'Height',
+        Description = 'Height to teleport up',
+        Min = -100,
+        Max = 200,
+        Default = 100,
+        Flag = 'AntiHitHeight',
+        Callback = function(self, value)
+            AntiHit.Settings.Height = value
+        end
+    })
+
+    AntiHit.Toggle.Functions.Settings.Slider({
+        Name = 'Stay Up',
+        Description = 'Time to stay up',
+        Min = 0.1,
+        Max = 0.5,
+        Default = 0.2,
+        Decimals = 1,
+        Flag = 'AntiHitStayUp',
+        Callback = function(self, value)
+            AntiHit.Settings.Up = value
+        end
+    })
+
+    AntiHit.Toggle.Functions.Settings.Slider({
+        Name = 'Stay Down',
+        Description = 'Time to stay down',
+        Min = 0.1,
+        Max = 0.5,
+        Default = 0.1,
+        Decimals = 1,
+        Flag = 'AntiHitStayDown',
+        Callback = function(self, value)
+            AntiHit.Settings.Down = value
+        end
+    })
+
+    AntiHit.Toggle.Functions.Settings.Slider({
+        Name = 'Transparency',
+        Description = 'Transparency of the clone part',
+        Min = 0,
+        Max = 1,
+        Default = 0,
+        Decimals = 1,
+        Flag = 'AntiHitTrans',
+        Callback = function(self, value)
+            AntiHit.Settings.Trans = value
+        end
+    })
+
+    AntiHit.Toggle.Functions.Settings.Dropdown({
+        Name = 'Material',
+        Description = 'Material of the clone part',
+        Default = 'Neon',
+        Options = Materials,
+        Flag = 'AntiHitMaterial',
+        Callback = function(self, value)
+            AntiHit.Settings.Material = value
+        end
+    })
+    
+    AntiHit.Toggle.Functions.Settings.TextBox({
+        Name = 'Color',
+        Description = 'Color to highlight the player',
+        Default = '0, 0, 140',
+        Flag = 'AntiHitColor',
+        Callback = function(self, callback)
+            local color = GetColor(callback)
+            if color then
+                AntiHit.Settings.Color = color
+            end
+        end
+    })
+end)()
+
+local Phase = {
+    Settings = {
+        Blocks = 10,
+        Delay = 0
+    },
+    Enabled = false,
+    Connect = nil,
+    Delay = tick()
+}
+
+local PhaseRay, BlockRay = RaycastParams.new(), RaycastParams.new()
+PhaseRay.RespectCanCollide, BlockRay.FilterType = true, Enum.RaycastFilterType.Include
+PhaseRay.FilterType = Enum.RaycastFilterType.Include
+
+local Blocks = CS:GetTagged("block")
+BlockRay.FilterDescendantsInstances = Blocks
+
+local StoreBlock = function(block, action)
+    if action == "add" then
+        table.insert(Blocks, block)
+    elseif action == "remove" then
+        local idx = table.find(Blocks, block)
+        if idx then table.remove(Blocks, idx) end
+    end
+    BlockRay.FilterDescendantsInstances = Blocks
+end
+
+CS:GetInstanceAddedSignal("block"):Connect(function(v) StoreBlock(v, "add") end)
+CS:GetInstanceRemovedSignal("block"):Connect(function(v) StoreBlock(v, "remove") end)
+PhaseRay.FilterDescendantsInstances = {Blocks, workspace:FindFirstChild("SpectatorPlatform"), CS:GetTagged("spawn-cage")}
+
+local PhaseOver = OverlapParams.new()
+PhaseOver.RespectCanCollide = true
+
+local GetPoint = function(point)
+    PhaseOver.AddToFilter(PhaseOver, {LP.Character, Cam})
+    local parts = workspace:GetPartBoundsInBox(CFrame.new(point), Vector3.new(1, 2, 1), PhaseOver)
+    return #parts == 0
+end
+
+local GetPhaseRay = function()
+    return workspace:Raycast(LP.Character.Head.Position, LP.Character.Humanoid.MoveDirection * 12e-1, PhaseRay)
+end
+
+local GetPhaseDir = function(ray)
+    return (ray.Normal.Z ~= 0 or not ray.Instance:GetAttribute("GreedyBlock")) and "Z" or "X"
+end
+
+local IsRay = function(ray)
+    return ray.Instance.Size[GetPhaseDir(ray)] <= Phase.Settings.Blocks and ray.Instance.CanCollide and ray.Normal.Y == 0
+end
+
+local CalcPhase = function(ray)
+    return LP.Character.HumanoidRootPart.CFrame + ray.Normal * (-(ray.Instance.Size[GetPhaseDir(ray)]) - LP.Character.HumanoidRootPart.Size.X / 15e-1)
+end
+
+local MainPhase = function(dest)
+    if GetPoint(dest.Position) then
+        Phase.Delay = tick() + Phase.Settings.Delay
+        LP.Character.HumanoidRootPart.CFrame = dest
+    end
+end
+
+(function()
+    Phase.Toggle = Tabs.Movement.Functions.NewModule({
+        Name = "Phase",
+        Description = "Allows you to walk through walls",
+        Icon = "rbxassetid://77429376996366",
+        Flag = "Phase",
+        Callback = function(self, callback)
+            Phase.Enabled = callback
+            if callback then
+                Phase.Connect = RS.Heartbeat:Connect(function()
+                    if Functions.IsAlive() and LP.Character.Humanoid.MoveDirection ~= Vector3.zero and UIS:IsKeyDown(Enum.KeyCode.LeftShift) and tick() >= Phase.Delay and self.Data.Enabled then
+                        local Wall = GetPhaseRay()
+                        if Wall and IsRay(Wall) then
+                            MainPhase(CalcPhase(Wall))
+                        end
+                    end
+                end)
+            else
+                if Phase.Connect then
+                    Phase.Connect:Disconnect()
+                    Phase.Connect = nil
+                end
+            end
+        end
+    })
+
+    Phase.Toggle.Functions.Settings.Slider({
+        Name = "Blocks",
+        Description = "Amount of blocks to phase through",
+        Min = 3,
+        Max = 10,
+        Default = 10,
+        Flag = "PhaseBlocks",
+        Callback = function(self, value)
+            Phase.Settings.Blocks = value
+        end
+    })
+
+    Phase.Toggle.Functions.Settings.Slider({
+        Name = "Delay",
+        Description = "Time to delay the phasing process",
+        Min = 0,
+        Max = 1,
+        Default = 0,
+        Decimals = 1,
+        Flag = "PhaseDelay",
+        Callback = function(self, value)
+            Phase.Settings.Delay = value
+        end
+    })
+end)()
+
+local SpiderData = {
+    Settings = {
+        Speed = 50,
+        Dist = 2,
+        AntiSuff = true,
+        Mode = "Smooth"
+    },
+    Ray = nil
+}
+
+local SpiderRay = RaycastParams.new()
+SpiderRay.RespectCanCollide = true
+SpiderRay:AddToFilter({LP.Character, Cam})
+
+local AntiSuff = function(bool, ray)
+    if bool and SpiderData.Settings.AntiSuff and not ray then
+        local hrp = LP.Character.HumanoidRootPart
+        hrp.Velocity = Vector3.new(hrp.Velocity.X, 0, hrp.Velocity.Z)
+        SpiderRay.CollisionGroup = hrp.CollisionGroup
+    end
+end
+
+local Spider = function(bool, ray, dt)
+    if bool and ray and ray.Normal.Y == 0 and not (UIS:IsKeyDown(Enum.KeyCode.LeftShift) and Phase.Enabled) then
+        local hrp = LP.Character.HumanoidRootPart
+        if SpiderData.Settings.Mode == "Smooth" then
+            hrp.Velocity = Vector3.new(0, SpiderData.Settings.Speed, 0)
+        else
+            hrp.CFrame += Vector3.new(0, SpiderData.Settings.Speed * dt, 0)
+        end
+    end
+end
+
+(function()
+    SpiderData.Toggle = Tabs.Movement.Functions.NewModule({
+        Name = "Spider",
+        Description = "Allows you to climb walls",
+        Icon = "rbxassetid://112116747329423",
+        Flag = "Spider",
+        Callback = function(self, callback)
+            if callback then
+                SpiderData.Connect = RS.PreSimulation:Connect(function(delta)
+                    if Functions.IsAlive() then
+                        local ray = workspace:Raycast(
+                            LP.Character.HumanoidRootPart.Position - Vector3.new(0, LP.Character.Humanoid.HipHeight - 0.5, 0),
+                            LP.Character.Humanoid.MoveDirection * (SpiderData.Settings.Dist + 0.5),
+                            SpiderRay
+                        )
+                        Spider(SpiderData.Ray, ray, delta)
+                        SpiderData.Ray = ray
+                        AntiSuff(SpiderData.Ray, ray)
+                    end
+                end)
+            else
+                if SpiderData.Connect then
+                    SpiderData.Connect:Disconnect()
+                    SpiderData.Connect = nil
+                end
+            end
+        end
+    })
+
+    SpiderData.Toggle.Functions.Settings.Dropdown({
+        Name = "Mode",
+        Description = "Mode to climb walls",
+        Default = "Smooth",
+        Options = {"Smooth", "Teleport"},
+        Flag = "SpiderMode",
+        Callback = function(self, value)
+            SpiderData.Settings.Mode = value
+        end
+    })
+
+    SpiderData.Toggle.Functions.Settings.Slider({
+        Name = "Speed",
+        Description = "How fast to climb walls",
+        Min = 10,
+        Max = 100,
+        Default = 50,
+        Flag = "SpiderSpeed",
+        Callback = function(self, value)
+            SpiderData.Settings.Speed = value
+        end
+    })
+
+    SpiderData.Toggle.Functions.Settings.Slider({
+        Name = "Distance",
+        Description = "Distance to check for the walls",
+        Min = 1,
+        Max = 3,
+        Default = 2,
+        Decimals = 1,
+        Flag = "SpiderDistance",
+        Callback = function(self, value)
+            SpiderData.Settings.Dist = value
+        end
+    })
+
+    SpiderData.Toggle.Functions.Settings.MiniToggle({
+        Name = "Anti Suffocation",
+        Description = "Prevents suffocation by climbing at a safe distance",
+        Flag = "SpiderAntiSuffocation",
+        Default = true,
+        Callback = function(self, value)
+            SpiderData.Settings.AntiSuff = value
+        end
+    })
+end)()
+
