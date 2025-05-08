@@ -1561,7 +1561,7 @@ local KillAuraData = {
     })
 
     table.insert(ParticleColors, KillAuraData.Toggle.Functions.Settings.Slider({
-        Name = "Particle Rate",
+        Name = "Particles Rate",
         Description = "How many particles are made per second",
         Min = 1,
         Max = 20,
@@ -1574,7 +1574,7 @@ local KillAuraData = {
     }))
 
     table.insert(ParticleColors, KillAuraData.Toggle.Functions.Settings.TextBox({
-        Name = "Start Particle Color",
+        Name = "Start Particles Color",
         Description = "Starting color of the particles",
         Default = "255, 255, 255",
         Flag = "StartKillAuraParticleColor",
@@ -1588,7 +1588,7 @@ local KillAuraData = {
     }))
 
     table.insert(ParticleColors, KillAuraData.Toggle.Functions.Settings.TextBox({
-        Name = "End Particle Color",
+        Name = "End Particles Color",
         Description = "Ending color of the particles",
         Default = "0, 0, 0",
         Flag = "EndKillAuraParticleColor",
