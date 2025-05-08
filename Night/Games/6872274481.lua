@@ -189,9 +189,7 @@ local GameData = {
         TeamUpgradeMeta = require(Rep.TS.games.bedwars["team-upgrade"]["team-upgrade-meta"]),
         Sound = require(Rep.rbxts_include.node_modules['@easy-games']['game-core'].out).SoundManager
     },
-    Remotes = {
-        SetInvItem = Rep.rbxts_include.node_modules['@rbxts'].net.out._NetManaged.SetInvItem
-    },
+    Remotes = {},
     Events = {
         Damage = Instance.new("BindableEvent"),
         Death = Instance.new("BindableEvent")
@@ -1020,14 +1018,16 @@ local KillAuraData = {
         Delay = 0,
         AutomaticallySwitch = false,
         Visuals = {
-            Highlight = false,
-            HighlightColor = {R = 22, G = 59, B = 228},
-            HightLightTransparency = 0.5,
             Highlights = {},
+            Highlight = false,
             Particles = false,
-            ParticleColor = {Start = {R = 100, G = 150, B = 235}, End = {R = 0, G = 0, B = 140}},
             CustomAnim = false,
-            PickedAnimation = "Air"
+            PickedAnimation = "Air",
+            Material = "Air",
+            ParticleRate = 15,
+            HightLightTransparency = 0.5,
+            HighlightColor = {R = 250, G = 250, B = 250},
+            ParticleColor = {Start = {R = 255, G = 255, B = 255}, End = {R = 0, G = 0, B = 0}},
         }
     },
     anim = {
@@ -1169,7 +1169,7 @@ local KillAuraData = {
                                         local Highlight = Instance.new("Part", EntityRoot)
                                         Highlight.Transparency = KillAuraData.Settings.Visuals.HightLightTransparency
                                         Highlight.Anchored = true
-                                        Highlight.Material = Enum.Material.SmoothPlastic
+                                        Highlight.Material = Enum.Material[KillAuraData.Settings.Visuals.Material]
                                         Highlight.CanCollide = false
                                         Highlight.CFrame = EntityRoot.CFrame
                                         Highlight.Color = Color3.fromRGB(KillAuraData.Settings.Visuals.HighlightColor.R, KillAuraData.Settings.Visuals.HighlightColor.G, KillAuraData.Settings.Visuals.HighlightColor.B)
@@ -1190,7 +1190,7 @@ local KillAuraData = {
                                         Particle.Drag = 10
                                         Particle.Speed = NumberRange.new(20, 50)
                                         Particle.SpreadAngle = Vector2.new(360, 360)
-                                        Particle.Rate = 10
+                                        Particle.Rate = KillAuraData.Settings.Visuals.ParticleRate
                                         Particle.Lifetime = NumberRange.new(0.5, 1)
                                         Particle.Rotation = NumberRange.new(1, 360)
                                         Particle.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(KillAuraData.Settings.Visuals.ParticleColor.Start.R, KillAuraData.Settings.Visuals.ParticleColor.Start.G, KillAuraData.Settings.Visuals.ParticleColor.Start.B)), ColorSequenceKeypoint.new(1, Color3.fromRGB(KillAuraData.Settings.Visuals.ParticleColor.End.R, KillAuraData.Settings.Visuals.ParticleColor.End.G, KillAuraData.Settings.Visuals.ParticleColor.End.B))}
@@ -1496,7 +1496,7 @@ local KillAuraData = {
         Callback = function(self, callback)
             KillAuraData.Settings.Visuals.Highlight = callback
             task.spawn(function()
-                repeat task.wait() until #HighLightOptions == 2
+                repeat task.wait() until #HighLightOptions == 3
                 for i,v in HighLightOptions do 
                     v.Functions.SetVisiblity(callback)
                 end
@@ -1504,10 +1504,21 @@ local KillAuraData = {
         end
     })
 
+    table.insert(HighLightOptions, KillAuraData.Toggle.Functions.Settings.Dropdown({
+        Name = 'Highlight Material',
+        Description = 'Material of the highlight',
+        Default = 'SmoothPlastic',
+        Options = Materials,
+        Flag = 'KillAuraMaterial',
+        Callback = function(self, value)
+            KillAuraData.Settings.Visuals.Material = value
+        end
+    }))
+
     table.insert(HighLightOptions, KillAuraData.Toggle.Functions.Settings.TextBox({
         Name = "Highlight Color",
         Description = "Color of the highlight",
-        Default = "22, 59, 228",
+        Default = "250, 250, 250",
         Hide = true,
         Flag = "KillAuraHighlightColor",
         Callback = function(self, callback)
@@ -1541,7 +1552,7 @@ local KillAuraData = {
         Callback = function(self, callback)
             KillAuraData.Settings.Visuals.Particles = callback
             task.spawn(function()
-                repeat task.wait() until #ParticleColors == 2
+                repeat task.wait() until #ParticleColors == 3
                 for i,v in ParticleColors do
                     v.Functions.SetVisiblity(callback)
                 end
@@ -1549,10 +1560,23 @@ local KillAuraData = {
         end
     })
 
+    table.insert(ParticleColors, KillAuraData.Toggle.Functions.Settings.Slider({
+        Name = "Particle Rate",
+        Description = "How many particles are made per second",
+        Min = 1,
+        Max = 20,
+        Default = 15,
+        Hide = true,
+        Flag = "KillAuraParticleRate",
+        Callback = function(self, callback)
+            KillAuraData.Settings.Visuals.ParticleRate = callback
+        end
+    }))
+
     table.insert(ParticleColors, KillAuraData.Toggle.Functions.Settings.TextBox({
         Name = "Start Particle Color",
         Description = "Starting color of the particles",
-        Default = "100, 150, 235",
+        Default = "255, 255, 255",
         Flag = "StartKillAuraParticleColor",
         Hide = true,
         Callback = function(self, callback)
@@ -1566,7 +1590,7 @@ local KillAuraData = {
     table.insert(ParticleColors, KillAuraData.Toggle.Functions.Settings.TextBox({
         Name = "End Particle Color",
         Description = "Ending color of the particles",
-        Default = "0, 0, 140",
+        Default = "0, 0, 0",
         Flag = "EndKillAuraParticleColor",
         Hide = true,
         Callback = function(self, callback)
@@ -3543,9 +3567,9 @@ local AntiHit = {
         Trans = 0,
         UpModifier = 0.5,
         DownModifier = 0.5,
-        Material = 'Neon',
+        Material = 'Snow',
         Dynamic = false,
-        Color = {R = 0, G = 0, B = 140}
+        Color = {R = 250, G = 250, B = 250}
     },
     Clone = nil,
     Connect = nil
@@ -3765,7 +3789,7 @@ end
     AntiHit.Toggle.Functions.Settings.Dropdown({
         Name = 'Material',
         Description = 'Material of the clone part',
-        Default = 'Neon',
+        Default = 'Snow',
         Options = Materials,
         Flag = 'AntiHitMaterial',
         Callback = function(self, value)
@@ -3776,7 +3800,7 @@ end
     AntiHit.Toggle.Functions.Settings.TextBox({
         Name = 'Color',
         Description = 'Color to highlight the player',
-        Default = '0, 0, 140',
+        Default = '250, 250, 250',
         Flag = 'AntiHitColor',
         Callback = function(self, callback)
             local color = GetColor(callback)
