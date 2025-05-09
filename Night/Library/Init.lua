@@ -66,7 +66,7 @@ do
                     Method = "GET"
                 }).Body
             end)
-            if suc and not err and file and not tostring(file):lower():find("404: Not Found") then
+            if suc and not err and file and not tostring(file):lower():find("404: not found") then
                 return loadstring(file)()
             end
         end
