@@ -2027,19 +2027,7 @@ end
         end
     })
 
-    local delay = NukerData.Toggle.Functions.Settings.Slider({
-        Name = "Delay",
-        Description = "The delay after each hit",
-        Min = 0,
-        Max = 5,
-        Default = 0.1,
-        Hide = true,
-        Flag = "NukerDelay",
-        Callback = function(self, callback)
-            NukerData.Settings.Delay = callback
-        end
-    })
-
+    local NukerDelay
     NukerData.Toggle.Functions.Settings.MiniToggle({
         Name = "Instant",
         Description = "Instantly breaks",
@@ -2047,7 +2035,23 @@ end
         Flag = "NukerInstant",
         Callback = function(self, callback)
             NukerData.Settings.Instant = callback
-            delay.Functions.SetVisiblity(not callback)
+            task.spawn(function()
+                repeat task.wait() until NukerDelay
+                NukerDelay.Functions.SetVisiblity(not callback)
+            end)
+        end
+    })
+
+    NukerDelay = NukerData.Toggle.Functions.Settings.Slider({
+        Name = "Delay",
+        Description = "Delay after each hit",
+        Min = 0,
+        Max = 1,
+        Default = 0.1,
+        Hide = true,
+        Flag = "NukerDelay",
+        Callback = function(self, callback)
+            NukerData.Settings.Delay = callback
         end
     })
 
@@ -3359,7 +3363,7 @@ end
     AutoKit.Toggle = Tabs.Utility.Functions.NewModule({
         Name = "AutoKit",
         Description = "Automatically uses your kits ability",
-        Icon = "rbxassetid://80238190157458",
+        Icon = "rbxassetid://126871982066452",
         Flag = "AutoKit",
         Callback = function(self, callback)
             if callback then
@@ -3563,11 +3567,11 @@ local AntiHit = {
         Range = 23,
         Height = 100,
         Up = 0.25,
-        Down = 0.15,
+        Down = 0.1,
         Trans = 0,
         UpModifier = 0.5,
         DownModifier = 0.5,
-        Material = 'Snow',
+        Material = "Snow",
         Dynamic = false,
         Color = {R = 250, G = 250, B = 250}
     },
@@ -3591,10 +3595,10 @@ end
 
 (function()
     AntiHit.Toggle = Tabs.Player.Functions.NewModule({
-        Name = 'AntiHit',
-        Description = 'Makes it harder for others to hit you',
-        Icon = 'rbxassetid://80691470589875',
-        Flag = 'AntiHit',
+        Name = "AntiHit",
+        Description = "Makes it harder for others to hit you",
+        Icon = "rbxassetid://80691470589875",
+        Flag = "AntiHit",
         Callback = function(self, callback)
             if callback then
                 repeat
@@ -3611,17 +3615,17 @@ end
                         Cam.CameraSubject = AntiHit.Clone.Humanoid
                 
                         for _, v in next, AntiHit.Clone:GetChildren() do
-                            if v:IsA('Accessory') then
+                            if v:IsA("Accessory") then
                                 v.Handle.Transparency = 1
-                            elseif string.lower(v.ClassName):find('part') then
-                                v.Transparency = v.Name == 'HumanoidRootPart' and AntiHit.Settings.Trans or 1
+                            elseif string.lower(v.ClassName):find("part") then
+                                v.Transparency = v.Name == "HumanoidRootPart" and AntiHit.Settings.Trans or 1
                 
-                                if v.Name == 'HumanoidRootPart' then
+                                if v.Name == "HumanoidRootPart" then
                                     v.Material = Enum.Material[AntiHit.Settings.Material]
                                     v.Color = Color3.fromRGB(AntiHit.Settings.Color.R, AntiHit.Settings.Color.G, AntiHit.Settings.Color.B)
                                 end
                 
-                                if v.Name == 'Head' then
+                                if v.Name == "Head" then
                                     v:ClearAllChildren()
                                 end
                             end
@@ -3680,12 +3684,12 @@ end
     })
 
     AntiHit.Toggle.Functions.Settings.Slider({
-        Name = 'Range',
-        Description = 'Range to detect the player',
+        Name = "Range",
+        Description = "Range to detect the player",
         Min = 1,
         Max = 18,
         Default = 18,
-        Flag = 'AntiHitRange',
+        Flag = "AntiHitRange",
         Callback = function(self, value)
             AntiHit.Settings.Range = value
         end
@@ -3693,10 +3697,10 @@ end
 
     local AntiHitUp, AntiHitDown
     AntiHit.Toggle.Functions.Settings.MiniToggle({
-        Name = 'Dynamic',
-        Description = 'Adjust time based on health difference',
+        Name = "Dynamic",
+        Description = "Adjust time based on health difference",
         Default = true,
-        Flag = 'AntiHitDynamic',
+        Flag = "AntiHitDynamic",
         Callback = function(self, value)
             AntiHit.Settings.Dynamic = value
             task.spawn(function()
@@ -3708,100 +3712,100 @@ end
     })
 
     AntiHitUp = AntiHit.Toggle.Functions.Settings.Slider({
-        Name = 'Up Modifier',
-        Description = 'Adjusts how much more/less time you stay up based on health difference',
+        Name = "Up Modifier",
+        Description = "Adjusts how much more/less time you stay up based on health difference",
         Min = 0,
         Max = 2,
         Default = 0.5,
         Decimals = 2,
         Hide = true,
-        Flag = 'AntiHitUpModifier',
+        Flag = "AntiHitUpModifier",
         Callback = function(self, value)
             AntiHit.Settings.UpModifier = value
         end
     })
     
     AntiHitDown = AntiHit.Toggle.Functions.Settings.Slider({
-        Name = 'Down Modifier',
-        Description = 'Adjusts how much more/less time you stay down based on health difference',
+        Name = "Down Modifier",
+        Description = "Adjusts how much more/less time you stay down based on health difference",
         Min = 0,
         Max = 2,
         Default = 0.5,
         Decimals = 2,
         Hide = true,
-        Flag = 'AntiHitDownModifier',
+        Flag = "AntiHitDownModifier",
         Callback = function(self, value)
             AntiHit.Settings.DownModifier = value
         end
     })
 
     AntiHit.Toggle.Functions.Settings.Slider({
-        Name = 'Height',
-        Description = 'Height to teleport up',
+        Name = "Height",
+        Description = "Height to teleport up",
         Min = -100,
         Max = 200,
         Default = 100,
-        Flag = 'AntiHitHeight',
+        Flag = "AntiHitHeight",
         Callback = function(self, value)
             AntiHit.Settings.Height = value
         end
     })
 
     AntiHit.Toggle.Functions.Settings.Slider({
-        Name = 'Stay Up',
-        Description = 'Time to stay up',
+        Name = "Stay Up",
+        Description = "Time to stay up",
         Min = 0.1,
         Max = 0.5,
         Default = 0.2,
         Decimals = 1,
-        Flag = 'AntiHitStayUp',
+        Flag = "AntiHitStayUp",
         Callback = function(self, value)
             AntiHit.Settings.Up = value
         end
     })
 
     AntiHit.Toggle.Functions.Settings.Slider({
-        Name = 'Stay Down',
-        Description = 'Time to stay down',
+        Name = "Stay Down",
+        Description = "Time to stay down",
         Min = 0.1,
         Max = 0.5,
         Default = 0.1,
         Decimals = 1,
-        Flag = 'AntiHitStayDown',
+        Flag = "AntiHitStayDown",
         Callback = function(self, value)
             AntiHit.Settings.Down = value
         end
     })
 
     AntiHit.Toggle.Functions.Settings.Slider({
-        Name = 'Transparency',
-        Description = 'Transparency of the clone part',
+        Name = "Transparency",
+        Description = "Transparency of the clone part",
         Min = 0,
         Max = 1,
         Default = 0,
         Decimals = 1,
-        Flag = 'AntiHitTrans',
+        Flag = "AntiHitTrans",
         Callback = function(self, value)
             AntiHit.Settings.Trans = value
         end
     })
 
     AntiHit.Toggle.Functions.Settings.Dropdown({
-        Name = 'Material',
-        Description = 'Material of the clone part',
-        Default = 'Snow',
+        Name = "Material",
+        Description = "Material of the clone part",
+        Default = "Snow",
         Options = Materials,
-        Flag = 'AntiHitMaterial',
+        Flag = "AntiHitMaterial",
         Callback = function(self, value)
             AntiHit.Settings.Material = value
         end
     })
     
     AntiHit.Toggle.Functions.Settings.TextBox({
-        Name = 'Color',
-        Description = 'Color to highlight the player',
-        Default = '250, 250, 250',
-        Flag = 'AntiHitColor',
+        Name = "Color",
+        Description = "Color to highlight the player",
+        Default = "250, 250, 250",
+        Flag = "AntiHitColor",
         Callback = function(self, callback)
             local color = GetColor(callback)
             if color then
@@ -4033,5 +4037,158 @@ end
             SpiderData.Settings.AntiSuff = value
         end
     })
-end)()
+end)();
 
+(function()
+    local ChestESP = {
+        Settings = {
+            Items = {"emerald", "speed"},
+            Color = {R = 0, G = 0, B = 0},
+            Trans = 0.5,
+            Corner = 6
+        },
+        Connect = {}
+    }
+
+    local ChestESPFolder: Folder = Instance.new("Folder", PG)
+    ChestESPFolder.Name = "ChestESP"
+
+    local MainESP = function(v)
+        local chest = v:FindFirstChild("ChestFolderValue") and v.ChestFolderValue.Value
+        if not chest then return end
+
+        local billboard = Instance.new("BillboardGui", ChestESPFolder)
+        billboard.Name, billboard.Adornee = "ChestESP", v
+        billboard.StudsOffsetWorldSpace, billboard.Size = Vector3.new(0, 5, 0), UDim2.fromOffset(35, 35)
+        billboard.AlwaysOnTop, billboard.ClipsDescendants = true, false
+
+        local frame = Instance.new("Frame", billboard)
+        frame.Size = UDim2.fromScale(1, 1)
+        frame.BackgroundColor3, frame.BackgroundTransparency = Color3.fromRGB(ChestESP.Settings.Color.R, ChestESP.Settings.Color.G, ChestESP.Settings.Color.B), ChestESP.Settings.Trans
+        Instance.new("UICorner", frame).CornerRadius = UDim.new(0, ChestESP.Settings.Corner)
+
+        local layout = Instance.new("UIListLayout", frame)
+        layout.FillDirection, layout.Padding = Enum.FillDirection.Vertical, UDim.new(0, 5)
+        layout.VerticalAlignment, layout.HorizontalAlignment = Enum.VerticalAlignment.Center, Enum.HorizontalAlignment.Center
+        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            local width = layout.AbsoluteContentSize.X + 5
+            if width < 35 then
+                width = 35
+            end
+            billboard.Size = UDim2.fromOffset(width, layout.AbsoluteContentSize.Y + 5)
+        end)
+
+        local Update = function()
+            local val = billboard.Adornee:FindFirstChild("ChestFolderValue") and billboard.Adornee.ChestFolderValue.Value:GetChildren()
+            if not val then billboard.Enabled = false; return end
+
+            for _, v in billboard.Frame:GetChildren() do
+                if v:IsA("ImageLabel") then v:Destroy() end
+            end
+            billboard.Enabled = false
+
+            local found = {}
+            for _, item in val do
+                local name, match = item.Name, nil
+                for _, v in next, ChestESP.Settings.Items do
+                    if string.find(string.lower(name), string.lower(v)) then
+                        match = v
+                        break
+                    end
+                end
+                
+                if not found[name] and (match or table.find(ChestESP.Settings.Items, name)) then
+                    found[name], billboard.Enabled = true, true
+                    local new = Instance.new("ImageLabel", billboard.Frame)
+                    new.Size, new.BackgroundTransparency, new.Image = UDim2.fromOffset(27, 27), 1, GameData.Modules.ItemMeta[name].image
+                end
+            end
+        end
+
+        for _, v in {chest.ChildAdded, chest.ChildRemoved} do
+            table.insert(ChestESP.Connect, v:Connect(function(item)
+                for _, v in next, ChestESP.Settings.Items do
+                    if string.find(string.lower(item.Name), string.lower(v)) then
+                        Update()
+                        return
+                    end
+                end
+            end))
+        end
+        task.spawn(Update)
+    end
+
+    ChestESP.Toggle = Tabs.Render.Functions.NewModule({
+        Name = "ChestESP",
+        Description = "Shows chests that contain important items",
+        Icon = "rbxassetid://134858697735956",
+        Flag = "ChestESP",
+        Callback = function(self, callback)
+            if callback then
+                table.insert(ChestESP.Connect, CS:GetInstanceAddedSignal("chest"):Connect(MainESP))
+                for _, v in CS:GetTagged("chest") do
+                    task.spawn(function()
+                        MainESP(v)
+                    end)
+                end
+            else
+                for _, v in ChestESP.Connect do v:Disconnect() end
+                ChestESP.Connect = {}
+                for _, v in ChestESPFolder:GetChildren() do v:Destroy() end
+            end
+        end
+    })
+
+    ChestESP.Toggle.Functions.Settings.TextBox({
+        Name = "Items",
+        Description = "Items to show (separated by commas and space)",
+        Default = "emerald, speed",
+        Flag = "ChestESPItems",
+        Callback = function(self, callback)
+            local items = {}
+            for item in string.gmatch(callback, "([^,]+)") do
+                table.insert(items, item:match("^%s*(.-)%s*$"))
+            end
+            ChestESP.Settings.Items = items
+        end
+    })
+
+    ChestESP.Toggle.Functions.Settings.TextBox({
+        Name = "Color",
+        Description = "Color of the background",
+        Default = "250, 250, 250",
+        Flag = "ChestESPColor",
+        Callback = function(self, callback)
+            local color = GetColor(callback)
+            if color then
+                ChestESP.Settings.Color = color
+            end
+        end
+    })
+
+    ChestESP.Toggle.Functions.Settings.Slider({
+        Name = "Transparency",
+        Description = "Transparency of the background",
+        Min = 0,
+        Max = 1,
+        Default = 0.5,
+        Decimals = 1,
+        Flag = "ChestESPTransparency",
+        Callback = function(self, value)
+            ChestESP.Settings.Trans = value
+        end
+    })
+
+    ChestESP.Toggle.Functions.Settings.Slider({
+        Name = "Corner Radius",
+        Description = "Corner radius of the background",
+        Min = 0,
+        Max = 10,
+        Default = 6,
+        Decimals = 0,
+        Flag = "ChestESPCornerRadius",
+        Callback = function(self, value)
+            ChestESP.Settings.Corner = value
+        end
+    })
+end)()
