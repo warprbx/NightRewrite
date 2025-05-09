@@ -187,7 +187,8 @@ local GameData = {
         Shop = require(Rep.TS.games.bedwars.shop['bedwars-shop']).BedwarsShop,
         ArmorSets = require(Rep.TS.games.bedwars['bedwars-armor-set']),
         TeamUpgradeMeta = require(Rep.TS.games.bedwars["team-upgrade"]["team-upgrade-meta"]),
-        Sound = require(Rep.rbxts_include.node_modules['@easy-games']['game-core'].out).SoundManager
+        Sound = require(Rep.rbxts_include.node_modules['@easy-games']['game-core'].out).SoundManager,
+        Wind = Knit.Controllers.WindWalkerController
     },
     Remotes = {},
     Events = {
@@ -252,16 +253,44 @@ if not HitRemoteName then
     return
 end
 
-local GetSpeedModifier = function(val: number)
-	local speed = 0
-	if Functions.IsAlive() then 
-        local speedm = GameData.Controllers.Sprint:getMovementStatusModifier():getModifiers()
-        for i,v in speedm do 
-            if v and i.moveSpeedMultiplier then
-                speed += (val * (i.moveSpeedMultiplier - 1)) / 2
-            end
-        end
+local oldWind, speedOrb = GameData.Modules.Wind.updateJump, 0
+GameData.Modules.Wind.updateJump = function(self, orb, ...)
+    if Functions.IsAlive() then
+        speedOrb = orb or 0
     end
+    return oldWind(self, orb, ...)
+end
+
+local GetSpeedModifier = function(val: number)
+    local speed, add = 0, false
+
+	if Functions.IsAlive() then 
+		local boost = LP.Character:GetAttribute('SpeedBoost')
+		if boost and boost > 1 then 
+            speed += val * (boost - 1)
+            add = true
+		end
+
+		if LP.Character:GetAttribute('SpeedPieBuff') then
+			speed += add and 3 or val - 17
+            add = true
+		end
+
+        local name = workspace[LP.Name]
+        if name and name:FindFirstChild('speed_boots_left') and name:FindFirstChild('speed_boots_right') then 
+            speed += add and 15 or val
+            add = true
+        end
+
+        if LP.Character:GetAttribute('GrimReaperChannel') then 
+            speed += add and 12 or val - 1
+            add = true
+        end
+
+		if speedOrb ~= 0 then 
+			speed += add and 18 or val + 3
+		end
+	end
 
 	return speed
 end
@@ -2659,10 +2688,11 @@ end
         Settings = {
             Range = 20,
             Delay = 0
-        }
+        },
+        Delay = {}
     }
 
-    ChestStealerData.Toggle = Tabs.Utility.Functions.NewModule({
+    ChestStealerData.Toggle = Tabs.World.Functions.NewModule({
         Name = "ChestStealer",
         Description = "Loots chests near you in skywars",
         Icon = "rbxassetid://86996272463051",
@@ -2671,11 +2701,10 @@ end
             if callback then
                 repeat
                     local Chest = GetNearestChest({Opened = true, PlacedByServer = true})
-                    if Chest.Chest and ChestStealerData.Settings.Range >= Chest.Distance then
+                    if Chest.Chest and ChestStealerData.Settings.Range >= Chest.Distance and (ChestStealerData.Delay[Chest.Chest] or 0) < tick() then
                         task.spawn(function()
-                            GameData.Controllers.Chest:openChest(Chest.Chest.ChestFolderValue.Value)
-                            GameData.Controllers.Chest:playChestOpenAnimation(Chest.Chest)
-                            for i,v in Chest.Chest.ChestFolderValue.Value:GetChildren() do
+                            ChestStealerData.Delay[Chest.Chest] = tick() + math.max(ChestStealerData.Settings.Delay, 2e-1)
+                            for _, v in Chest.Chest.ChestFolderValue.Value:GetChildren() do
                                 if v:IsA("Accessory") then
                                     task.wait(ChestStealerData.Settings.Delay)
                                     GameData.Modules.Remotes:GetNamespace("Inventory"):Get("ChestGetItem"):CallServer(Chest.Chest.ChestFolderValue.Value, v)
@@ -2684,7 +2713,7 @@ end
                             GameData.Modules.Remotes:GetNamespace("Inventory"):Get("SetObservedChest"):SendToServer(nil)
                         end)
                     end
-                    task.wait()
+                    task.wait(ChestStealerData.Settings.Delay)
                 until not self.Data.Enabled
             end
         end
