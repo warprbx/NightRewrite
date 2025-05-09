@@ -35,7 +35,6 @@ do
 
     local lp = plrs.LocalPlayer :: Player
 
-    Assets.Functions.setmt = Assets.Functions.clonefunction(setmetatable)
     Assets.Functions.gethui = gethui or function() return plrs.LocalPlayer:FindFirstChildWhichIsA("PlayerGui") end
     Assets.Functions.GenerateString = function(chars)
         local str = ""
@@ -1214,7 +1213,6 @@ do
 
         type EntryInstance = Frame & {
             Line: Frame,
-            OptionalText: TextLabel,
             MainText: TextLabel
         }
         
@@ -1472,7 +1470,6 @@ do
             Icon = Data.Icon or "",
             Objects = {},
             Connections = {},
-            Functions = {},
             Default = Data.Default,
             Selected = Data.Default
         }
