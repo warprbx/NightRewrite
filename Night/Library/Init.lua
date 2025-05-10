@@ -2574,7 +2574,7 @@ do
                         if notify and Night.Config.UI.Notifications then
                             Assets.Notifications.Send({
                                 Description = ModuleData.Name.." enabled!",
-                                Duration = 2.5
+                                Duration = 0.5
                             })
                         end
                     end
@@ -2612,7 +2612,7 @@ do
                         if notify and Night.Config.UI.Notifications then
                             Assets.Notifications.Send({
                                 Description = ModuleData.Name.." disabled!",
-                                Duration = 2.5
+                                Duration = 0.5
                             })
                         end
                     end
