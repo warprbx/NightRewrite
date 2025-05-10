@@ -120,6 +120,7 @@ local Plrs = Functions.cloneref(game:GetService("Players")) :: Players
 local HttpService = Functions.cloneref(game:GetService("HttpService")) :: HttpService
 local UIS = Functions.cloneref(game:GetService("UserInputService")) :: UserInputService
 local RS = Functions.cloneref(game:GetService("RunService")) :: RunService
+local Virtual = Functions.cloneref(game:GetService("VirtualUser")) :: VirtualUser
 local LP = Plrs.LocalPlayer
 local Cam = WS.CurrentCamera
 local PG = Functions.cloneref(LP:WaitForChild("PlayerGui")) :: PlayerGui
@@ -154,40 +155,47 @@ repeat task.wait() until Knit and Cam:FindFirstChild("Viewmodel")
 
 local GameData = {
     Controllers = {
-        Sword = Knit.Controllers.SwordController,
-        SetInvItem = Knit.Controllers.SetInvItem,
-        Sprint = Knit.Controllers.SprintController,
         Balloon = Knit.Controllers.BalloonController,
-        ViewModel = Knit.Controllers.ViewmodelController,
         BlockBreaker = Knit.Controllers.BlockBreakController.blockBreaker,
+        Dao = Knit.Controllers.DaoController,
+        Place = Knit.Controllers.BlockPlacementController,
         Queue = Knit.Controllers.QueueController,
-        Chest = Knit.Controllers.ChestController,
-        TeamUpgrades = Knit.Controllers.TeamUpgradeController,
+        SetInvItem = Knit.Controllers.SetInvItem,
+        SpiritAssasin = Knit.Controllers.SpiritAssassinController,
+        Sprint = Knit.Controllers.SprintController,
+        Sword = Knit.Controllers.SwordController,
         TeamCrate = Knit.Controllers.TeamCrateController,
-        SpiritAssasin = Knit.Controllers.SpiritAssassinController
+        TeamUpgrades = Knit.Controllers.TeamUpgradeController,
+        ViewModel = Knit.Controllers.ViewmodelController,
+        Wind = Knit.Controllers.WindWalkerController,
+        Chest = Knit.Controllers.ChestController
     },
     Modules = {
-        Remotes = require(Rep.TS.remotes).default.Client,
-        Store = require(LP.PlayerScripts.TS.ui.store).ClientStore,
-        Network = require(LP.PlayerScripts.TS.lib.network),
+        Animation = require(Rep.TS.animation["animation-util"]).GameAnimationUtil,
+        AnimationTypes = require(Rep.TS.animation["animation-type"]).AnimationType,
+        App = require(Rep.rbxts_include.node_modules["@easy-games"]["game-core"].out.client.controllers["app-controller"]).AppController,
+        ArmorSets = require(Rep.TS.games.bedwars["bedwars-armor-set"]),
+        BlockEngine = require(Rep.rbxts_include.node_modules["@easy-games"]["block-engine"].out).BlockEngine,
+        BlockEngineClient = require(LP.PlayerScripts.TS.lib["block-engine"]["client-block-engine"]).ClientBlockEngine,
+        BlockPlacer = require(Rep.rbxts_include.node_modules["@easy-games"]["block-engine"].out.client.placement["block-placer"]).BlockPlacer,
+        BlockRemotes = require(Rep.rbxts_include.node_modules["@easy-games"]["block-engine"].out.shared.remotes).BlockEngineRemotes,
+        ChargeState = require(Rep.TS.combat["charge-state"]).ChargeState,
         DamageType = require(Rep.TS.damage["damage-type"]).DamageType,
         Inventory = require(Rep.TS.inventory["inventory-util"]).InventoryUtil,
         ItemMeta = require(Rep.TS.item["item-meta"]).items,
-        Animation = require(Rep.TS.animation["animation-util"]).GameAnimationUtil,
-        AnimationTypes = require(Rep.TS.animation["animation-type"]).AnimationType,
-        ChargeState = require(Rep.TS.combat["charge-state"]).ChargeState,
-        BlockEngine = require(Rep.rbxts_include.node_modules["@easy-games"]['block-engine'].out).BlockEngine,
-        BlockRemotes = require(Rep.rbxts_include.node_modules["@easy-games"]['block-engine'].out.shared.remotes).BlockEngineRemotes,
-        BlockPlacer = require(Rep.rbxts_include.node_modules["@easy-games"]['block-engine'].out.client.placement['block-placer']).BlockPlacer,
-        BlockEngineClient = require(LP.PlayerScripts.TS.lib['block-engine']['client-block-engine']).ClientBlockEngine,
+        Knockback = require(Rep.TS.damage["knockback-util"]).KnockbackUtil,
+        Network = require(LP.PlayerScripts.TS.lib.network),
         PlayerUtil = require(Rep.TS.player["player-util"]).GamePlayerUtil,
+        Projectile = require(LP.PlayerScripts.TS.controllers.global.combat.projectile["projectile-controller"]).ProjectileController,
         Promise = require(KnitPath.src.Knit.Util.Promise),
-        SyncEvents = require(LP.PlayerScripts.TS["client-sync-events"]).ClientSyncEvents,
+        Remotes = require(Rep.TS.remotes).default.Client,
+        Shop = require(Rep.TS.games.bedwars.shop["bedwars-shop"]).BedwarsShop,
         ShopPurchase = require(LP.PlayerScripts.TS.controllers.global.shop.api["purchase-item"]).shopPurchaseItem,
-        Shop = require(Rep.TS.games.bedwars.shop['bedwars-shop']).BedwarsShop,
-        ArmorSets = require(Rep.TS.games.bedwars['bedwars-armor-set']),
+        Sound = require(Rep.rbxts_include.node_modules["@easy-games"]["game-core"].out).SoundManager,
+        Store = require(LP.PlayerScripts.TS.ui.store).ClientStore,
+        SyncEvents = require(LP.PlayerScripts.TS["client-sync-events"]).ClientSyncEvents,
         TeamUpgradeMeta = require(Rep.TS.games.bedwars["team-upgrade"]["team-upgrade-meta"]),
-        Sound = require(Rep.rbxts_include.node_modules['@easy-games']['game-core'].out).SoundManager,
+        UI = require(Rep.rbxts_include.node_modules["@easy-games"]["game-core"].out).UILayers,
         Wind = Knit.Controllers.WindWalkerController
     },
     Remotes = {},
@@ -202,10 +210,10 @@ repeat task.wait() until GameData.Modules.Store:getState().Game and GameData.Mod
 
 local OnUninject = Assets.Main.OnUninject :: BindableEvent
 table.insert(Night.Connections, OnUninject.Event:Connect(function()
-    for i,v in GameData.Events do
+    for _, v in GameData.Events do
         v:Destroy()
     end
-    for i,v in GameData.GameEvents do
+    for _, v in GameData.GameEvents do
         if typeof(v) == "function" then
             v()
         elseif typeof(v) == "RBXScriptConnection" then
@@ -228,14 +236,14 @@ local HitRemoteName = SwordServerRequestConstants[find + 1]
 if find and SwordServerRequestConstants[find + 1] then
     HitRemoteName = SwordServerRequestConstants[find + 1]
 else
-    for i,v in SwordServerRequestConstants do
+    for i, v in SwordServerRequestConstants do
         if v == "Client" then
             HitRemoteName = SwordServerRequestConstants[i + 1]
             return
         end
     end
 
-    for i,v in SwordServerRequestConstants do
+    for _, v in SwordServerRequestConstants do
         if v == "SwordHit" then
             HitRemoteName = v
             return
@@ -265,24 +273,24 @@ local GetSpeedModifier = function(val: number)
     local speed, add = 0, false
 
 	if Functions.IsAlive() then 
-		local boost = LP.Character:GetAttribute('SpeedBoost')
+		local boost = LP.Character:GetAttribute("SpeedBoost")
 		if boost and boost > 1 then 
             speed += val * (boost - 1)
             add = true
 		end
 
-		if LP.Character:GetAttribute('SpeedPieBuff') then
+		if LP.Character:GetAttribute("SpeedPieBuff") then
 			speed += add and 3 or val - 17
             add = true
 		end
 
         local name = workspace[LP.Name]
-        if name and name:FindFirstChild('speed_boots_left') and name:FindFirstChild('speed_boots_right') then 
+        if name and name:FindFirstChild("speed_boots_left") and name:FindFirstChild("speed_boots_right") then 
             speed += add and 15 or val
             add = true
         end
 
-        if LP.Character:GetAttribute('GrimReaperChannel') then 
+        if LP.Character:GetAttribute("GrimReaperChannel") then 
             speed += add and 12 or val - 1
             add = true
         end
@@ -405,7 +413,7 @@ local getAngle = function(look, plrpos, pos)
     return calcAngle(look, scaledVec.Unit)
 end
 
-local CreateTimerUi = function(Options: {StartTime: number})
+local CreateTimerUi = function(Options: {StartTime: number, Color: {R: number, G: number, B: number}})
     local Data = {
         StartTime = Options.StartTime or 2.5,
         Functions = {}
@@ -426,7 +434,7 @@ local CreateTimerUi = function(Options: {StartTime: number})
     TimeText.Text = tostring(Data.StartTime)
     TimeText.Font = Enum.Font.GothamBold
     TimeText.TextSize = 22
-    TimeText.TextColor3 = Color3.fromRGB(235, 235, 235)
+    TimeText.TextColor3 = Color3.fromRGB(255, 255, 255)
     TimeText.BackgroundTransparency = 1
         
     local PB_BG = Instance.new("Frame", BG)
@@ -438,7 +446,7 @@ local CreateTimerUi = function(Options: {StartTime: number})
 
     local PB = Instance.new("Frame", PB_BG)
     PB.Size = UDim2.fromScale(1, 1)
-    PB.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    PB.BackgroundColor3 = Color3.fromRGB(Options.Color.R, Options.Color.G, Options.Color.B)
     PB.BorderSizePixel = 0
     Instance.new("UICorner", PB).CornerRadius = UDim.new(0, 12)
 
@@ -521,8 +529,8 @@ local SpeedData
         Description = "Lets you move faster",
         Icon = "rbxassetid://90453358286627",
         Flag = "Speed",
-        Callback = function(self, Callback: boolean)
-            if Callback then
+        Callback = function(self, callback)
+            if callback then
                 table.insert(SpeedData.Connections, GameData.Events.Damage.Event:Connect(function(data)
                     if SpeedData.Settings.DamageBoost and not SpeedData.Settings.SpeedUpCooldown then
                         if data.Player and data.Player == LP.Character and data.Damager and (data.DamageType ~= GameData.Modules.DamageType.FALL and data.DamageType ~= GameData.Modules.DamageType.VOID) then
@@ -574,7 +582,7 @@ local SpeedData
                     task.wait()
                 until not self.Data.Enabled
             else
-                for i,v in SpeedData.Connections do 
+                for _, v in SpeedData.Connections do 
                     v:Disconnect()
                 end
                 table.clear(SpeedData.Connections)
@@ -716,7 +724,8 @@ local FlyData = {
         VerticalValue = 0,
         VericalAmount = 30,
         LastOnGround = os.clock(),
-        FlyTimer = false
+        FlyTimer = false,
+        UIColor = {R = 210, G = 210, B = 210}
     },
     FlyUi = nil,
     Allowed = true,
@@ -753,14 +762,14 @@ local FlyData = {
                 if Night.Mobile then
                     pcall(function()
                         local jumpButton = PG.TouchGui.TouchControlFrame.JumpButton
-                        table.insert(FlyData.Connections, jumpButton:GetPropertyChangedSignal('ImageRectOffset'):Connect(function()
+                        table.insert(FlyData.Connections, jumpButton:GetPropertyChangedSignal("ImageRectOffset"):Connect(function()
                             FlyData.Settings.VerticalValue = jumpButton.ImageRectOffset.X == 146 and 1 or 0
                         end))
                     end)
                 end
 
                 if FlyData.Settings.FlyTimer and not FlyData.FlyUi then
-                    FlyData.FlyUi = CreateTimerUi({StartTime = 2.5})
+                    FlyData.FlyUi = CreateTimerUi({StartTime = 2.5, Color = FlyData.Settings.UIColor})
                 end
 
                 FlyData.Settings.LastOnGround = os.clock()
@@ -956,6 +965,7 @@ local FlyData = {
         end
     })
 
+    local FlyColor
     FlyData.Toggle.Functions.Settings.MiniToggle({
         Name = "Timer UI",
         Description = "A UI to show how long you have left in the air",
@@ -972,6 +982,24 @@ local FlyData = {
                     FlyData.FlyUi.Functions.Destroy()
                     FlyData.FlyUi = nil
                 end
+            end
+            task.spawn(function()
+                repeat task.wait() until FlyColor
+                FlyColor.Functions.SetVisiblity(callback)
+            end)
+        end
+    })
+
+    FlyColor = FlyData.Toggle.Functions.Settings.TextBox({
+        Name = "UI Color",
+        Description = "Color of the UI",
+        Default = "210, 210, 210",
+        Hide = true,
+        Flag = "FlyUIColor",
+        Callback = function(self, callback)
+            local color = GetColor(callback)
+            if color then
+                FlyData.Settings.UIColor = color
             end
         end
     })
@@ -1534,11 +1562,11 @@ local KillAuraData = {
     })
 
     table.insert(HighLightOptions, KillAuraData.Toggle.Functions.Settings.Dropdown({
-        Name = 'Highlight Material',
-        Description = 'Material of the highlight',
-        Default = 'SmoothPlastic',
+        Name = "Highlight Material",
+        Description = "Material of the highlight",
+        Default = "SmoothPlastic",
         Options = Materials,
-        Flag = 'KillAuraMaterial',
+        Flag = "KillAuraMaterial",
         Callback = function(self, value)
             KillAuraData.Settings.Visuals.Material = value
         end
@@ -1682,7 +1710,7 @@ groundRay.FilterDescendantsInstances = {workspace:WaitForChild("Map")}
     local nofallsafe, NoFallVelocity, nofalldangerous, NoFallSpeed
     NoFallData.Toggle.Functions.Settings.Dropdown({
         Name = "Mode",
-        Description = "Mode to prevent fall damage.",
+        Description = "Mode to prevent fall damage",
         Default = "Smooth",
         Options = {"Smooth", "Slow"},
         Flag = "NoFallMode",
@@ -1699,7 +1727,7 @@ groundRay.FilterDescendantsInstances = {workspace:WaitForChild("Map")}
     })
     nofallsafe = NoFallData.Toggle.Functions.Settings.MiniToggle({
         Name = "Safe Mode",
-        Description = "Lands a bit slower when jumping from a very high point.",
+        Description = "Lands a bit slower when jumping from a very high point",
         Flag = "NoFallSafe",
         Default = true,
         Hide = true,
@@ -1709,7 +1737,7 @@ groundRay.FilterDescendantsInstances = {workspace:WaitForChild("Map")}
     })
     nofalldangerous = NoFallData.Toggle.Functions.Settings.Slider({
         Name = "Dangerous Position",
-        Description = "Height to check for the dangerous position.",
+        Description = "Height to check for the dangerous position",
         Min = 50,
         Max = 80,
         Default = 80,
@@ -1721,7 +1749,7 @@ groundRay.FilterDescendantsInstances = {workspace:WaitForChild("Map")}
     })
     NoFallVelocity = NoFallData.Toggle.Functions.Settings.Slider({
         Name = "Velocity Check",
-        Description = "Value to check the velocity when you\"re falling.",
+        Description = "Value to check the velocity when you're falling",
         Min = 20,
         Max = 70,
         Default = 70,
@@ -1733,7 +1761,7 @@ groundRay.FilterDescendantsInstances = {workspace:WaitForChild("Map")}
     })
     NoFallSpeed = NoFallData.Toggle.Functions.Settings.Slider({
         Name = "Fall Speed",
-        Description = "Speed to fall down.",
+        Description = "Speed to fall down",
         Min = 1,
         Max = 90,
         Default = 90,
@@ -1907,7 +1935,7 @@ end
 local DamageBlock = function(block)
     local Position = GameData.Modules.BlockEngine:getBlockPosition(block.Position)
     if Position then
-        local Response = GameData.Modules.BlockRemotes.Client:Get('DamageBlock'):CallServerAsync({
+        local Response = GameData.Modules.BlockRemotes.Client:Get("DamageBlock"):CallServerAsync({
             blockRef = {blockPosition = Position},
             hitPosition = Position,
             hitNormal = Vector3.yAxis
@@ -1941,7 +1969,7 @@ local CanBreak = function(block: Instance, HandCheck: boolean)
     local teamData = GameData.Modules.PlayerUtil.getGamePlayer(LP)
     local teamId = teamData and teamData:getTeamId()
     
-    if block:GetAttribute('NoBreak') or (teamId and block:GetAttribute('Team' .. teamId .. 'NoBreak')) then
+    if block:GetAttribute("NoBreak") or (teamId and block:GetAttribute("Team" .. teamId .. "NoBreak")) then
         return false
     end
 
@@ -2017,7 +2045,7 @@ end
                             if operation then
                                 local result, response = operation:awaitStatus()
 
-                                if result ~= GameData.Modules.Promise.Status.Resolved or response == 'cancelled' then
+                                if result ~= GameData.Modules.Promise.Status.Resolved or response == "cancelled" then
                                     failed = tick() + 1
                                     local curr = GetBlocksAtPos(nil, true)
                                     if NukerData.Misc.Data.targetbedspot == curr then
@@ -2149,7 +2177,7 @@ end)();
 local GetBlocks = function(UsePriority: boolean)
     local Wool = GetItemType("wool", true, false)
     if not Wool or not Wool.Item then
-        local Priority = {'wool', 'ceramic', 'oak', 'stone', 'tesla', 'tnt', 'obsidian'}
+        local Priority = {"wool", "ceramic", "oak", "stone", "tesla", "tnt", "obsidian"}
         if UsePriority then
             for i,v in Priority do
                 local Block = GetItemType(v, true)
@@ -2196,7 +2224,7 @@ local ScaffoldData = {
 }
 
 local CheckVec = function(mode: string, pos: Vector3)
-    if mode == 'Vector' then
+    if mode == "Vector" then
         local x, y, z = pos.X, pos.Y, pos.Z
         for i = 1, #ScaffoldData.Misc.Blocks do
             local offset = ScaffoldData.Misc.Blocks[i]
@@ -2219,7 +2247,7 @@ local BlockAt = function(mode: string, min: Vector3, max: Vector3)
     local minY, maxY = math.min(min.Y, max.Y), math.max(min.Y, max.Y)
     local minZ, maxZ = math.min(min.Z, max.Z), math.max(min.Z, max.Z)
 
-    if mode == 'Store' then
+    if mode == "Store" then
         for x = minX, maxX do
             for y = minY, maxY do
                 for z = minZ, maxZ do
@@ -2229,7 +2257,7 @@ local BlockAt = function(mode: string, min: Vector3, max: Vector3)
                 end
             end
         end
-    elseif mode == 'Count' then
+    elseif mode == "Count" then
         for x = minX, maxX do
             for y = minY, maxY do
                 for z = minZ, maxZ do
@@ -2265,13 +2293,13 @@ local GetCorner = function(poscheck: Vector3, pos: Vector3, mode: string)
     local offset = Vector3.new(3, 3, 3)
     local point = poscheck + (pos - poscheck).Unit * 100
     
-    if mode == 'Clamp' then
+    if mode == "Clamp" then
         return Vector3.new(
             math.clamp(point.X, poscheck.X - offset.X, poscheck.X + offset.X),
             math.clamp(point.Y, poscheck.Y - offset.Y, poscheck.Y + offset.Y),
             math.clamp(point.Z, poscheck.Z - offset.Z, poscheck.Z + offset.Z)
         )
-    elseif mode == 'Projection' then
+    elseif mode == "Projection" then
         return Vector3.new(
             math.clamp(point.X, poscheck.X - offset, poscheck.X + offset),
             math.clamp(point.Y, poscheck.Y - offset, poscheck.Y + offset),
@@ -2296,7 +2324,7 @@ local GetBuild = function(pos: Vector3, mode: string)
     local maxPos = GameData.Modules.BlockEngine:getBlockPosition(pos + Vector3.new(radius, radius, radius))
     local blocks = BlockAt(ScaffoldData.Settings.Pos, minPos, maxPos)
 
-    if mode == 'Radius' then
+    if mode == "Radius" then
         radius = Vector3.new(21, 21, 21)
         minPos = GameData.Modules.BlockEngine:getBlockPosition(pos - radius)
         maxPos = GameData.Modules.BlockEngine:getBlockPosition(pos + radius)
@@ -2312,7 +2340,7 @@ local GetBuild = function(pos: Vector3, mode: string)
         end
         
         table.clear(blocks)
-    elseif mode == 'Square' then
+    elseif mode == "Square" then
         dist *= 60
         
         for i = 1, #blocks do
@@ -2351,7 +2379,7 @@ local PlaceBlock = function(pos: Vector3, mode: string)
     local block = GetBlocks(true)
     if not block then return end
     
-    if mode == 'Optimized' then
+    if mode == "Optimized" then
         if not placed[block] then
             placed[block] = GameData.Modules.BlockPlacer.new(GameData.Modules.BlockEngineClient, block.Item.itemType)
         end
@@ -2425,9 +2453,9 @@ end
 
     local Boost
     ScaffoldData.Toggle.Functions.Settings.MiniToggle({
-        Name = 'Tower',
-        Description = 'Places blocks above you when space is held.',
-        Flag = 'ScaffoldTower',
+        Name = "Tower",
+        Description = "Places blocks above you when space is held",
+        Flag = "ScaffoldTower",
         Default = true,
         Callback = function(self, value)
             ScaffoldData.Settings.Tower = value
@@ -2438,12 +2466,12 @@ end
         end
     })
     Boost = ScaffoldData.Toggle.Functions.Settings.Slider({
-        Name = 'Boost',
-        Description = 'Boost power to apply to your character when Tower is enabled.',
+        Name = "Boost",
+        Description = "Boost power to apply to your character when Tower is enabled",
         Min = 2,
         Max = 7,
         Default = 5,
-        Flag = 'ScaffoldBoost',
+        Flag = "ScaffoldBoost",
         Hide = true,
         Callback = function(self, value)
             ScaffoldData.Settings.Boost = value
@@ -2451,9 +2479,9 @@ end
     })
     local ScaffoldDown
     ScaffoldData.Toggle.Functions.Settings.MiniToggle({
-        Name = 'Down',
-        Description = 'Places blocks below you when left shift is held.',
-        Flag = 'ScaffoldDown',
+        Name = "Down",
+        Description = "Places blocks below you when left shift is held",
+        Flag = "ScaffoldDown",
         Default = true,
         Callback = function(self, value)
             ScaffoldData.Settings.Down = value
@@ -2464,67 +2492,67 @@ end
         end
     })
     ScaffoldDown = ScaffoldData.Toggle.Functions.Settings.Slider({
-        Name = 'Down',
-        Description = 'Blocks to place below you.',
+        Name = "Down",
+        Description = "Blocks to place below you",
         Min = 4,
         Max = 8,
         Default = 4,
         Hide = true,
-        Flag = 'ScaffoldDowner',
+        Flag = "ScaffoldDowner",
         Callback = function(self, value)
             ScaffoldData.Settings.DownValue = value
         end
     })
     ScaffoldData.Toggle.Functions.Settings.Slider({
-        Name = 'Extend',
-        Description = 'Blocks to place in front of you.',
+        Name = "Extend",
+        Description = "Blocks to place in front of you",
         Min = 1,
         Max = 8,
         Default = 1,
-        Flag = 'ScaffoldExtend',
+        Flag = "ScaffoldExtend",
         Callback = function(self, value)
             ScaffoldData.Settings.Extend = value
         end
     })
     ScaffoldData.Toggle.Functions.Settings.Dropdown({
-        Name = 'Place',
-        Description = 'Mode to place blocks.',
-        Options = {'Optimized', 'Fast'},
-        Default = 'Optimized',
-        Flag = 'ScaffoldPlace',
+        Name = "Place",
+        Description = "Mode to place blocks",
+        Options = {"Optimized", "Fast"},
+        Default = "Optimized",
+        Flag = "ScaffoldPlace",
         Callback = function(self, value)
             ScaffoldData.Settings.Place = value
         end
     })
     ScaffoldData.Toggle.Functions.Settings.Dropdown({
-        Name = 'Corner',
-        Description = 'Mode to detect the closest corner.',
-        Options = {'Clamp', 'Projection', 'Axis'},
-        Default = 'Clamp',
-        Flag = 'ScaffoldCorner',
+        Name = "Corner",
+        Description = "Mode to detect the closest corner",
+        Options = {"Clamp", "Projection", "Axis"},
+        Default = "Clamp",
+        Flag = "ScaffoldCorner",
         Callback = function(self, value)
             ScaffoldData.Settings.Corner = value
         end
     })
     ScaffoldData.Toggle.Functions.Settings.Dropdown({
-        Name = 'Build',
-        Description = 'Mode to build around the corner.',
-        Options = {'Radius', 'Square', 'Optimized'},
-        Default = 'Radius',
-        Flag = 'ScaffoldBuild',
+        Name = "Build",
+        Description = "Mode to build around the corner",
+        Options = {"Radius", "Square", "Optimized"},
+        Default = "Radius",
+        Flag = "ScaffoldBuild",
         Callback = function(self, value)
             ScaffoldData.Settings.Build = value
         end
     })
     ScaffoldData.Toggle.Functions.Settings.Dropdown({
-        Name = 'Offset',
-        Description = 'Mode to get the offsets.',
-        Options = {'Mathematical', 'Direct'},
-        Default = 'Mathematical',
-        Flag = 'ScaffoldOffset',
+        Name = "Offset",
+        Description = "Mode to get the offsets",
+        Options = {"Mathematical", "Direct"},
+        Default = "Mathematical",
+        Flag = "ScaffoldOffset",
         Callback = function(self, value)
             table.clear(ScaffoldData.Misc.Blocks)
-            if value == 'Mathematical' then
+            if value == "Mathematical" then
                 for i = 0, 26 do
                     if i ~= 13 then
                         local x = (i % 3 - 1) * 3
@@ -2548,21 +2576,21 @@ end
         end
     })
     ScaffoldData.Toggle.Functions.Settings.Dropdown({
-        Name = 'Check',
-        Description = 'Mode to check the vector offsets.',
-        Options = {'Vector', 'Store'},
-        Default = 'Vector',
-        Flag = 'ScaffoldVector',
+        Name = "Check",
+        Description = "Mode to check the vector offsets",
+        Options = {"Vector", "Store"},
+        Default = "Vector",
+        Flag = "ScaffoldVector",
         Callback = function(self, value)
             ScaffoldData.Settings.Vec = value
         end
     })
     ScaffoldData.Toggle.Functions.Settings.Dropdown({
-        Name = 'Position',
-        Description = 'Mode to get the blocks\' positions.',
-        Options = {'Store', 'Count', 'Size'},
-        Default = 'Store',
-        Flag = 'ScaffoldPosition',
+        Name = "Position",
+        Description = "Mode to get the blocks\" positions",
+        Options = {"Store", "Count", "Size"},
+        Default = "Store",
+        Flag = "ScaffoldPosition",
         Callback = function(self, value)
             ScaffoldData.Settings.Pos = value
         end
@@ -2657,7 +2685,7 @@ local GetChests = function(Options: {Opened: boolean, PlacedByServer: boolean})
         if v:FindFirstChild("ChestFolderValue") and v:FindFirstChild("ChestFolderValue"):IsA("ObjectValue") and v:FindFirstChild("Model") and v.Model:FindFirstChild("RootPart") and v.Model:FindFirstChild("RootPart"):IsA("Part") then
             if v:GetAttribute("Block") and v:GetAttribute("BlockUUID") then
                 if Options then
-                    if (Options.Opened and not v:GetAttribute("ChestOpened") or not Options.Opened) and (Options.PlacedByServer and v:GetAttribute("ServerPlaced") or not Options.PlacedByServer) then
+                    if Options.PlacedByServer and v:GetAttribute("ServerPlaced") or not Options.PlacedByServer then
                         table.insert(Chests, v)
                     end
                 else
@@ -2763,25 +2791,25 @@ end
         },
         other = {
             blacklists = {
-                'duck_spawn_egg',
-                'unstable_portal',
-                'smoke_bomb',
-                'black_market_upgrade_3'
+                "duck_spawn_egg",
+                "unstable_portal",
+                "smoke_bomb",
+                "black_market_upgrade_3"
             }
         }
     }
     
     autoConsumeData.Toggle = Tabs.Utility.Functions.NewModule({
-        Name = 'AutoConsume',
-        Description = 'Automatically consumes items & potions.',
-        Icon = 'rbxassetid://123628760864442',
-        Flag = 'AutoConsume',
+        Name = "AutoConsume",
+        Description = "Automatically consumes items & potions",
+        Icon = "rbxassetid://123628760864442",
+        Flag = "AutoConsume",
         Callback = function(self, callback)
             if callback then
                 repeat
                     for _, v in GetInventory().items do
-                        if CanConsume(v.itemType) and (v.itemType == 'pie' and not LP.Character:GetAttribute('SpeedPieBuff') or v.itemType ~= 'pie') and not v.itemType:find('deploy') and not table.find(autoConsumeData.other.blacklists, v.itemType) then
-                            if (v.itemType == 'pie' or v.itemType:find('apple') and LP.Character.Humanoid.Health <= autoConsumeData.settings.health) or v.itemType ~= 'pie' and not v.itemType:find('apple') then
+                        if CanConsume(v.itemType) and (v.itemType == "pie" and not LP.Character:GetAttribute("SpeedPieBuff") or v.itemType ~= "pie") and not v.itemType:find("deploy") and not table.find(autoConsumeData.other.blacklists, v.itemType) then
+                            if (v.itemType == "pie" or v.itemType:find("apple") and LP.Character.Humanoid.Health <= autoConsumeData.settings.health) or v.itemType ~= "pie" and not v.itemType:find("apple") then
                                 GameData.Modules.Remotes:Get("ConsumeItem"):CallServerAsync({
                                     item = v.tool
                                 })
@@ -2798,7 +2826,7 @@ end
     local AutoConsumeTime
     autoConsumeData.Toggle.Functions.Settings.MiniToggle({
         Name = "Instant Consume",
-        Description = "Instantly consume items.",
+        Description = "Instantly consume items",
         Flag = "AutoConsumeInstant",
         Default = true,
         Callback = function(self, enabled)
@@ -2811,7 +2839,7 @@ end
     })
     AutoConsumeTime = autoConsumeData.Toggle.Functions.Settings.Slider({
         Name = "Consume Time",
-        Description = "Time to consume an item.",
+        Description = "Time to consume an item",
         Min = 0.1,
         Max = 2,
         Default = 1,
@@ -2824,7 +2852,7 @@ end
     })
     autoConsumeData.Toggle.Functions.Settings.Slider({
         Name = "Consume Apple Health",
-        Description = "Health to be at to consume an apple.",
+        Description = "Health to be at to consume an apple",
         Min = 1,
         Max = 99,
         Default = 70,
@@ -3136,25 +3164,26 @@ end
 (function()
     local LongJumpData = {
         Settings = {
-            Speed = 70,
+            Speed = 60,
             Timer = 1.5,
-            Height = 10,
+            Height = 8,
             NoStrafe = false,
             Cam = false,
             Disable = false,
             CombatCheck = false,
-            WallCheck = false
+            WallCheck = false,
+            Mode = "Velocity"
         },
         Connections = {}
     }
 
     LongJumpData.Toggle = Tabs.Movement.Functions.NewModule({
         Name = "LongJump",
-        Description = "Makes you jump far, fast, using a fireball.",
+        Description = "Makes you jump far, fast, using a fireball",
         Icon = "rbxassetid://94454897188777",
         Flag = "LongJump",
-        Callback = function(self, State)
-            if State then
+        Callback = function(self, callback)
+            if callback then
                 if not Functions.IsAlive() then
                     task.wait(0.3)
                     Functions.Notify("You can't use this while you're dead", 2.5)
@@ -3163,7 +3192,6 @@ end
                 end
 
                 SpeedData.Allowed, FlyData.Allowed = false, false
-                LP.Character.HumanoidRootPart.Anchored = true
 
                 local Fireball = GetItemType("fireball", false, false)
                 if not Fireball or not Fireball.Item or not Fireball.Item.tool then
@@ -3212,8 +3240,7 @@ end
                 local Velocity = LongJumpData.Settings.Height + 5
                 local LookVector = LP.Character.PrimaryPart.CFrame.LookVector
                 local StartTime = os.clock()
-
-                LP.Character.HumanoidRootPart.Anchored = false
+                local Boosted = false
 
                 task.spawn(function()
                     repeat
@@ -3223,8 +3250,8 @@ end
                     until not self.Data.Enabled
                 end)
 
-                LongJumpData.Connections.Heartbeat = RS.Heartbeat:Connect(function(DT)
-                    if not self.Data.Enabled or (os.clock() - StartTime >= LongJumpData.Settings.Timer) then
+				LongJumpData.Connections.Heartbeat = RS.PreSimulation:Connect(function(DT)
+                    if not self.Data.Enabled or (os.clock() - StartTime >= LongJumpData.Settings.Timer) or not Functions.IsAlive() then
                         if self.Data.Enabled then
                             self.Functions.Toggle(false, false, false, true, true)
                         end
@@ -3242,11 +3269,33 @@ end
                     RayParams.FilterType = Enum.RaycastFilterType.Exclude
                     RayParams.FilterDescendantsInstances = {LP.Character}
 
-                    local WallHit = workspace:Raycast(LP.Character.PrimaryPart.Position, MoveDirection * (Speed * DT + 1), RayParams)
-                    if not WallHit and LongJumpData.Settings.WallCheck then
-                        LP.Character.PrimaryPart.CFrame += MoveDirection * DT * Speed
+                    local LJVelocity = function()
+                        if LongJumpData.Settings.Mode == "Velocity" then
+                            LP.Character.HumanoidRootPart.AssemblyLinearVelocity = (MoveDirection * (Speed + GetSpeedModifier(23))) + Vector3.new(0, LP.Character.HumanoidRootPart.AssemblyLinearVelocity.Y, 0)
+                            if LP.Character.Humanoid.FloorMaterial == Enum.Material.Air then
+                                if not Boosted then
+                                    LP.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(LP.Character.HumanoidRootPart.AssemblyLinearVelocity.X, LongJumpData.Settings.Height + 5, LP.Character.HumanoidRootPart.AssemblyLinearVelocity.Z)
+                                    Boosted = true
+                                else
+                                    LP.Character.HumanoidRootPart.AssemblyLinearVelocity += Vector3.new(0, DT * (workspace.Gravity - (LongJumpData.Settings.Height + 14)), 0)
+                                end
+                            else
+                                LP.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(LP.Character.HumanoidRootPart.AssemblyLinearVelocity.X, LongJumpData.Settings.Height + 5, LP.Character.HumanoidRootPart.AssemblyLinearVelocity.Z)
+                            end
+                        else
+                            LP.Character.PrimaryPart.CFrame += MoveDirection * DT * Speed
+                        end
                     end
-                end)
+
+                    local WallHit = workspace:Raycast(LP.Character.PrimaryPart.Position, MoveDirection * (Speed * DT + 1), RayParams)
+                    if LongJumpData.Settings.WallCheck then
+                        if not WallHit then
+                            LJVelocity()
+                        end
+                    else
+                        LJVelocity()
+                    end
+				end)
             else
                 for _, Connection in next, LongJumpData.Connections do
                     Connection:Disconnect()
@@ -3262,12 +3311,23 @@ end
         end
     })
 
+    LongJumpData.Toggle.Functions.Settings.Dropdown({
+        Name = "Mode",
+        Description = "Mode to boost your character's speed",
+        Default = "Velocity",
+        Options = {"Velocity", "CFrame"},
+        Flag = "LongJumpMode",
+        Callback = function(self, value)
+            LongJumpData.Settings.Mode = value
+        end
+    })
+
     LongJumpData.Toggle.Functions.Settings.Slider({
         Name = "Speed",
         Description = "How fast to go",
-        Min = 40,
+        Min = 1,
         Max = 70,
-        Default = 70,
+        Default = 60,
         Flag = "LongJumpSpeed",
         Callback = function(self, Value)
             LongJumpData.Settings.Speed = Value
@@ -3278,7 +3338,7 @@ end
         Name = "Timer",
         Description = "How long you jump for",
         Min = 0.1,
-        Max = 1.5,
+        Max = 2,
         Default = 1.5,
         Decimals = 1,
         Flag = "LongJumpTimer",
@@ -3330,8 +3390,8 @@ end
         Name = "Height",
         Description = "Height to start at which slowly decreases",
         Min = 1,
-        Max = 30,
-        Default = 10,
+        Max = 15,
+        Default = 8,
         Flag = "LongJumpHeight",
         Callback = function(self, Value)
             LongJumpData.Settings.Height = Value
@@ -3434,7 +3494,7 @@ end
         Flag = "AutoKitKit",
         Callback = function(self, value)
             AutoKit.Settings.Kit = value
-            for i,v in AutoKit.Settings.KitRanges do
+            for i, v in AutoKit.Settings.KitRanges do
                 task.spawn(function()
                     repeat task.wait() until AutoKit.Toggle.Settings[i.."AutoKitRange"].Functions
                     AutoKit.Toggle.Settings[i.."AutoKitRange"].Functions.SetVisiblity(value == i)
@@ -3539,8 +3599,8 @@ end)();
             if callback then
                 if BanShield.Settings.Mode == "Hook" then
                     if not BanShield.Hook then
-                        BanShield.Hook = hookmetamethod(game, '__namecall', function(self, ...)
-                            if table.find({'reportPerformanceMetrics', 'AnalyticsReportEvent'}, self.Name) and self.Data.Enabled then
+                        BanShield.Hook = hookmetamethod(game, "__namecall", function(self, ...)
+                            if table.find({"reportPerformanceMetrics", "AnalyticsReportEvent"}, self.Name) and self.Data.Enabled then
                                 return
                             end
                             return BanShield.Hook(self, ...)
@@ -4218,6 +4278,777 @@ end)();
         Flag = "ChestESPCornerRadius",
         Callback = function(self, value)
             ChestESP.Settings.Corner = value
+        end
+    })
+end)();
+
+(function()
+    local ProjectileAimbot = {
+        Settings = {
+            Visibility = 0,
+            Size = 90,
+            Thickness = 2,
+            Filled = false,
+            Other = false,
+            Color = {R = 255, G = 0, B = 0}
+        },
+        Circle = nil,
+        Old = nil
+    }
+
+    local Aim = function(start, speed, gravity, pos, velo, prediction, height, params)
+        local eps = 1/1000000000
+        local getVal = function(d) return math.abs(d) < eps end
+        local getNrRoot = function(x) return x^(1/3) * (x < 0 and -1 or 1) end
+
+        local getPrediction = function(a, b, c)
+            local half_b, constant = b / (2 * a), c / a
+            local discriminant = half_b * half_b - constant
+
+            if getVal(discriminant) then
+                return -half_b
+            elseif discriminant > 0 then
+                local sqrt_discriminant = math.sqrt(discriminant)
+                return sqrt_discriminant - half_b, -sqrt_discriminant - half_b
+            end
+            return 0
+        end
+
+        local getSqrt = function(a, b, c, d)
+            local root0, root1, root2
+            local numRoots, sub
+            local A, B, C = b / a, c / a, d / a
+            local sqA = A * A
+            local p, q = (1/3) * (-(1/3) * sqA + B), 0.5 * ((2/27) * A * sqA - (1/3) * A * B + C)
+            local cbP = p * p * p
+            local discriminant = q * q + cbP
+
+            if getVal(discriminant) then
+                if getVal(q) then
+                    root0, numRoots = 0, 1
+                else
+                    local u = getNrRoot(-q)
+                    root0, root1, numRoots = 2 * u, -u, 2
+                end
+            elseif discriminant < 0 then
+                local phi = (1/3) * math.acos(-q / math.sqrt(-cbP))
+                local t = 2 * math.sqrt(-p)
+                root0, root1, root2 = t * math.cos(phi), -t * math.cos(phi + math.pi/3), -t * math.cos(phi - math.pi/3)
+                numRoots = 3
+            else
+                local sqrtDiscriminant = math.sqrt(discriminant)
+                local u, v = getNrRoot(sqrtDiscriminant - q), -getNrRoot(sqrtDiscriminant + q)
+                root0, numRoots = u + v, 1
+            end
+
+            sub = (1/3) * A
+            if numRoots > 0 then root0 = root0 - sub end
+            if numRoots > 1 then root1 = root1 - sub end
+            if numRoots > 2 then root2 = root2 - sub end
+
+            return root0, root1, root2
+        end
+
+        local getNewPred = function(a, b, c, d, e)
+            local root0, root1, root2, root3
+            local coeffs = {}
+            local z, u, v, sub
+            local A, B, C, D = b / a, c / a, d / a, e / a
+            local sqA = A * A
+            local p, q, r = -0.375 * sqA + B, 0.125 * sqA * A - 0.5 * A * B + C, -(3/256) * sqA * sqA + 0.0625 * sqA * B - 0.25 * A * C + D
+            local numRoots
+
+            if getVal(r) then
+                coeffs[3], coeffs[2], coeffs[1], coeffs[0] = q, p, 0, 1
+                local results = {getSqrt(coeffs[0], coeffs[1], coeffs[2], coeffs[3])}
+                numRoots = #results
+                root0, root1, root2 = results[1], results[2], results[3]
+            else
+                coeffs[3], coeffs[2], coeffs[1], coeffs[0] = 0.5 * r * p - 0.125 * q * q, -r, -0.5 * p, 1
+                root0, root1, root2 = getSqrt(coeffs[0], coeffs[1], coeffs[2], coeffs[3])
+                z = root0
+
+                u, v = z * z - r, 2 * z - p
+                u = getVal(u) and 0 or (u > 0 and math.sqrt(u) or nil)
+                v = getVal(v) and 0 or (v > 0 and math.sqrt(v) or nil)
+                if not u or not v then return end
+
+                coeffs[2], coeffs[1], coeffs[0] = z - u, q < 0 and -v or v, 1
+                local results = {getPrediction(coeffs[0], coeffs[1], coeffs[2])}
+                numRoots = #results
+                root0, root1 = results[1], results[2]
+
+                coeffs[2], coeffs[1], coeffs[0] = z + u, q < 0 and v or -v, 1
+                if numRoots < 4 then
+                    local results1 = {getPrediction(coeffs[0], coeffs[1], coeffs[2])}
+                    if numRoots == 0 then
+                        root0, root1 = results1[1], results1[2]
+                    elseif numRoots == 1 then
+                        root1, root2 = results1[1], results1[2]
+                    elseif numRoots == 2 then
+                        root2, root3 = results1[1], results1[2]
+                    end
+                    numRoots = numRoots + #results1
+                end
+            end
+
+            sub = 0.25 * A
+            if numRoots > 0 then root0 = root0 - sub end
+            if numRoots > 1 then root1 = root1 - sub end
+            if numRoots > 2 then root2 = root2 - sub end
+            if numRoots > 3 then root3 = root3 - sub end
+
+            return {root3, root2, root1, root0}
+        end
+
+        local displacement = pos - start
+        local velX, velY, velZ = velo.X, velo.Y, velo.Z
+        local dispX, dispY, dispZ = displacement.X, displacement.Y, displacement.Z
+        local halfGravity = -0.5 * gravity
+
+        if math.abs(velY) > 0.01 and prediction and prediction > 0 then
+            local estTime = displacement.Magnitude / speed
+            for _ = 1, 100 do
+                velY = velY - (0.5 * prediction) * estTime
+                local velocity = velo * 0.016
+                local ray = workspace.Raycast(workspace, Vector3.new(pos.X, pos.Y, pos.Z), Vector3.new(velocity.X, (velY * estTime) - height, velocity.Z), params)
+                if ray then
+                    local newTarget = ray.Position + Vector3.new(0, height, 0)
+                    estTime = estTime - math.sqrt(((pos - newTarget).Magnitude * 2) / prediction)
+                    pos = newTarget
+                    dispY = (pos - start).Y
+                    velY = 0
+                    break
+                else
+                    break
+                end
+            end
+        end
+
+        local solutions = getNewPred(
+            halfGravity * halfGravity,
+            -2 * velY * halfGravity,
+            velY * velY - 2 * dispY * halfGravity - speed * speed + velX * velX + velZ * velZ,
+            2 * dispY * velY + 2 * dispX * velX + 2 * dispZ * velZ,
+            dispY * dispY + dispX * dispX + dispZ * dispZ
+        )
+
+        if solutions then
+            local posRoots = {}
+            for _, v in next, solutions do
+                if v > 0 then
+                    table.insert(posRoots, v)
+                end
+            end
+            if posRoots[1] then
+                local t = posRoots[1]
+                local d = (dispX + velX * t) / t
+                local e = (dispY + velY * t - halfGravity * t * t) / t
+                local f = (dispZ + velZ * t) / t
+                return start + Vector3.new(d, e, f)
+            end
+            return 0
+        elseif gravity == 0 then
+            local t = displacement.Magnitude / speed
+            local d = (dispX + velX * t) / t
+            local e = (dispY + velY * t - halfGravity * t * t) / t
+            local f = (dispZ + velZ * t) / t
+            return start + Vector3.new(d, e, f)
+        end
+        return 0
+    end
+
+    ProjectileAimbot.Toggle = Tabs.Combat.Functions.NewModule({
+        Name = "ProjectileAimbot",
+        Description = "Silently adjusts your aim towards the enemy",
+        Icon = "rbxassetid://78975297266093",
+        Flag = "ProjectileAimbot",
+        Callback = function(self, callback)
+            if callback then
+                task.spawn(function()
+                    repeat 
+                        if Drawing then
+                            local vec = Vector2.new(0, 0)
+                            if LP:GetMouse() and workspace.CurrentCamera then
+                                local pos = workspace.CurrentCamera:WorldToScreenPoint(LP:GetMouse().Hit.Position)
+                                if pos then
+                                    vec = Vector2.new(pos.X, pos.Y + (ProjectileAimbot.Settings.Size / 2))
+                                end
+                            end
+
+                            if not ProjectileAimbot.Circle then
+                                ProjectileAimbot.Circle = Drawing.new("Circle")
+                            else
+                                ProjectileAimbot.Circle.Radius = ProjectileAimbot.Settings.Size
+                                ProjectileAimbot.Circle.Color = Color3.fromRGB(ProjectileAimbot.Settings.Color.R, ProjectileAimbot.Settings.Color.G, ProjectileAimbot.Settings.Color.B)
+                                ProjectileAimbot.Circle.Filled = ProjectileAimbot.Settings.Filled
+                                ProjectileAimbot.Circle.Thickness = ProjectileAimbot.Settings.Thickness
+                                ProjectileAimbot.Circle.Transparency = ProjectileAimbot.Settings.Visibility
+                                ProjectileAimbot.Circle.Visible = true
+                                ProjectileAimbot.Circle.Position = vec
+                            end
+                        end
+                        task.wait()
+                    until not self.Data.Enabled
+                end)
+
+                ProjectileAimbot.Old = GameData.Modules.Projectile.calculateImportantLaunchValues
+                GameData.Modules.Projectile.calculateImportantLaunchValues = function(proj, data, line, start, pos)
+                    local launch = pos or proj:getLaunchPosition(start)
+
+                    for _, player in next, Plrs:GetPlayers() do
+                        if Functions.IsAlive(player) and Functions.IsAlive() and player.Team ~= LP.Team then
+                            local screenPos, onScreen = workspace.CurrentCamera:WorldToScreenPoint(player.Character.HumanoidRootPart.Position)
+                            if onScreen and (ProjectileAimbot.Circle.Position - Vector2.new(screenPos.X, screenPos.Y)).Magnitude <= (ProjectileAimbot.Settings.Size + 25) then
+                                local calc = Aim(CFrame.new(launch + data.fromPositionOffset, player.Character.HumanoidRootPart.Position).Position, data:getProjectileMeta().launchVelocity, data:getProjectileMeta().gravitationalAcceleration * data.gravityMultiplier, player.Character.HumanoidRootPart.Position, player.Character.HumanoidRootPart.Velocity, workspace.Gravity * (player.Character:GetAttribute("InflatedBalloons") and 0.3 or 1), player.Character.Humanoid.HipHeight, groundRay)
+
+                                if (not ProjectileAimbot.Settings.Other and not data.projectile:find("arrow")) or not launch or not calc then
+                                    return ProjectileAimbot.Old(proj, data, line, start, pos)
+                                end
+                                
+                                return {initialVelocity = CFrame.new(launch, calc).LookVector * data:getProjectileMeta().launchVelocity, positionFrom = launch + data.fromPositionOffset, deltaT = data:getProjectileMeta().predictionLifetimeSec or data:getProjectileMeta().lifetimeSec, gravitationalAcceleration = data:getProjectileMeta().gravitationalAcceleration * data.gravityMultiplier}
+                            end
+                        end
+                    end
+
+                    return ProjectileAimbot.Old(proj, data, line, start, pos)
+                end
+            else
+                GameData.Modules.Projectile.calculateImportantLaunchValues = ProjectileAimbot.Old
+                if ProjectileAimbot.Circle then 
+                    ProjectileAimbot.Circle:Destroy()
+                    ProjectileAimbot.Circle = nil
+                end
+            end
+        end
+    })
+
+    ProjectileAimbot.Toggle.Functions.Settings.MiniToggle({
+        Name = "Other Projectiles",
+        Description = "Applies aimbot to all projectiles",
+        Flag = "ProjAimbotOtherProjectiles",
+        Callback = function(self, value)
+            ProjectileAimbot.Settings.Other = value
+        end
+    })
+
+    ProjectileAimbot.Toggle.Functions.Settings.MiniToggle({
+        Name = "Filled FOV",
+        Description = "Fills the FOV circle",
+        Flag = "ProjAimbotFovFilled",
+        Callback = function(self, value)
+            ProjectileAimbot.Settings.Filled = value
+        end
+    })
+
+    ProjectileAimbot.Toggle.Functions.Settings.Slider({
+        Name = "FOV Visibility",
+        Description = "Changes the visibility of your FOV circle",
+        Min = 0,
+        Max = 1,
+        Default = 0,
+        Decimals = 1,
+        Flag = "ProjAimbotFovVisibility",
+        Callback = function(self, value)
+            ProjectileAimbot.Settings.Visibility = value
+            if ProjectileAimbot.Circle then
+                ProjectileAimbot.Circle.Transparency = value
+            end
+        end
+    })
+
+    ProjectileAimbot.Toggle.Functions.Settings.Slider({
+        Name = "FOV Size",
+        Description = "Changes the size of your FOV circle",
+        Min = 0,
+        Max = 360,
+        Default = 90,
+        Flag = "ProjAimbotFovSize",
+        Callback = function(self, value)
+            ProjectileAimbot.Settings.Size = value
+            if ProjectileAimbot.Circle then
+                ProjectileAimbot.Circle.Radius = value
+            end
+        end
+    })
+
+    ProjectileAimbot.Toggle.Functions.Settings.Slider({
+        Name = "FOV Thickness",
+        Description = "Changes the thickness of your FOV circle",
+        Min = 0,
+        Max = 12,
+        Default = 2,
+        Flag = "ProjAimbotFovThickness",
+        Callback = function(self, value)
+            ProjectileAimbot.Settings.Thickness = value
+            if ProjectileAimbot.Circle then
+                ProjectileAimbot.Circle.Thickness = value
+            end
+        end
+    })
+
+    ProjectileAimbot.Toggle.Functions.Settings.TextBox({
+        Name = "FOV Color",
+        Description = "Changes the color of your FOV circle",
+        Default = "255, 0, 0",
+        Flag = "ProjAimbotFovColor",
+        Callback = function(self, value)
+            local color = GetColor(value)
+            if color then
+                ProjectileAimbot.Settings.Color = color
+            end
+        end
+    })
+end)();
+
+(function()
+    local VelocityData = {
+        Settings = {Knockback = 0},
+        Old = GameData.Modules.Knockback.applyKnockback
+    }
+
+    VelocityData.Toggle = Tabs.Player.Functions.NewModule({
+        Name = "Velocity",
+        Description = "Changes how much knockback you take",
+        Icon = "rbxassetid://80062062896103",
+        Flag = "Velocity",
+        Callback = function(self, callback)
+            if callback then
+                VelocityData.OldApplyKnockback = GameData.Modules.Knockback.applyKnockback
+                GameData.Modules.Knockback.applyKnockback = function(...)
+                    local args = {...}
+                    args[2] = VelocityData.Settings.Knockback
+                    return VelocityData.OldApplyKnockback(table.unpack(args))
+                end
+            else
+                GameData.Modules.Knockback.applyKnockback = VelocityData.OldApplyKnockback
+            end
+        end
+    })
+    
+    VelocityData.Toggle.Functions.Settings.Slider({
+        Name = "Knockback",
+        Description = "How much knockback you take",
+        Flag = "Knockback",
+        Min = 0,
+        Max = 100,
+        Default = 0,
+        Callback = function(self, callback)
+            VelocityData.Settings.Knockback = callback
+        end
+    })
+end)();
+
+(function()
+    Tabs.World.Functions.NewModule({
+        Name = "AntiAFK",
+        Description = "Blocks Roblox from kicking you while being AFK and fixes BedWars\"s queue",
+        Icon = "rbxassetid://112131645518908",
+        Flag = "AntiAFK",
+        Callback = function(self, callback)
+            if callback then
+                Rep.rbxts_include.node_modules["@rbxts"].net.out._NetManaged.AfkInfo:FireServer({afk = false})
+                LP.Idled:Connect(function()
+                    if not self.Data.Enabled then return end
+                    Virtual:CaptureController()
+                    Virtual:ClickButton2(Vector2.new())
+                    Virtual:Button2Up(Vector2.new(), Cam.CFrame)
+                    Virtual:Button2Down(Vector2.new(), Cam.CFrame)
+                end)
+            end
+        end
+    })
+end)();
+
+(function()
+    Tabs.Movement.Functions.NewModule({
+        Name = "Desync",
+        Description = "Makes your server movement delayed",
+        Icon = "rbxassetid://127506391973510",
+        Flag = "Desync",
+        Callback = function(self, callback)
+            if callback and setfflag then
+                setfflag("S2PhysicsSenderRate", "2")
+            end
+        end
+    })
+end)();
+
+(function()
+    local AntiVoid = {
+        Settings = {
+            Loop = 20,
+            Add = 8,
+            Del = 0.4,
+            Times = 3,
+            Power = 10,
+            Jumps = 7,
+            Visible = 0.6,
+            Mode = "Launch",
+            Smooth = "Accurate",
+            Material = "ForceField",
+            Color = {R = 0, G = 0, B = 140}
+        },
+        Connect = nil,
+        Part = nil,
+        Bounce = false,
+        Position = 0
+    }
+
+    local GetYPos = function()
+        local pos = math.huge
+        for _, block in next, Blocks do
+            local ray = workspace:Raycast(block.Position + Vector3.new(0, 1000, 0), Vector3.new(0, -1000, 0), BlockRay)
+            if ray and ray.Position.Y < pos then
+                pos = ray.Position.Y - 7
+            end
+        end
+        return pos
+    end
+
+    AntiVoid.Toggle = Tabs.World.Functions.NewModule({
+        Name = "AntiVoid",
+        Description = "Prevents you from falling into the void",
+        Icon = "rbxassetid://76137296972317",
+        Flag = "AntiVoid",
+        Callback = function(self, callback)
+            if callback then
+                AntiVoid.Part = Instance.new("Part", workspace)
+                AntiVoid.Part.Size = Vector3.new(2000, 0.5, 2000)
+                AntiVoid.Part.Color = Color3.fromRGB(AntiVoid.Settings.Color.R, AntiVoid.Settings.Color.G, AntiVoid.Settings.Color.B)
+                AntiVoid.Part.Material = Enum.Material[AntiVoid.Settings.Material]
+                AntiVoid.Part.Transparency = 1 - AntiVoid.Settings.Visible
+                AntiVoid.Part.CanCollide = AntiVoid.Settings.Mode ~= "Launch"
+                AntiVoid.Part.Position = Vector3.new(0, GetYPos(), 0)
+                AntiVoid.Part.Anchored = true
+
+                AntiVoid.Position = Functions.IsAlive() and LP.Character.HumanoidRootPart.Position.Y + 10
+                task.spawn(function()
+                    repeat
+                        AntiVoid.Part.Color = Color3.fromRGB(AntiVoid.Settings.Color.R, AntiVoid.Settings.Color.G, AntiVoid.Settings.Color.B)
+                        AntiVoid.Part.Material = Enum.Material[AntiVoid.Settings.Material]
+                        AntiVoid.Part.Transparency = 1 - AntiVoid.Settings.Visible
+                        AntiVoid.Part.CanCollide = AntiVoid.Settings.Mode ~= "Launch"
+
+                        if Functions.IsAlive() and LP.Character.Humanoid.FloorMaterial ~= Enum.Material.Air then
+                            AntiVoid.Position = LP.Character.HumanoidRootPart.Position.Y
+                        end
+
+                        task.wait()
+                    until not self.Data.Enabled
+                end)
+
+                AntiVoid.Bounce = false
+                AntiVoid.Connect = AntiVoid.Part.Touched:connect(function(void)
+                    if Functions.IsAlive() and void.Parent == LP.Character and not AntiVoid.Bounce and not FlyData.Toggle.Data.Enabled then
+                        AntiVoid.Bounce = true
+                        if AntiVoid.Settings.Mode == "Launch" then
+                            for i = 1, AntiVoid.Settings.Loop do
+                                task.wait(AntiVoid.Settings.Del / 10)
+                                LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, i * (AntiVoid.Position - LP.Character.HumanoidRootPart.Position.Y + AntiVoid.Settings.Add), 0)
+                            end
+                        elseif AntiVoid.Settings.Mode == "Teleport" then
+                            local grav = workspace.Gravity
+                            workspace.Gravity = 0
+
+                            LP.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                            for i = 1, AntiVoid.Settings.Times do
+                                LP.Character.HumanoidRootPart.CFrame += Vector3.new(0, AntiVoid.Settings.Power, 0)
+                                task.wait(AntiVoid.Settings.Times / 20)
+                            end
+
+                            workspace.Gravity = grav
+                        else
+                            for i = 1, AntiVoid.Settings.Jumps do
+                                LP.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                                task.wait(0.1)
+                            end
+                        end
+                        AntiVoid.Bounce = false
+                    end
+                end)
+            else
+                if AntiVoid.Part then
+                    AntiVoid.Part:Destroy()
+                    AntiVoid.Part = nil
+                end
+                if AntiVoid.Connect then
+                    AntiVoid.Connect:Disconnect()
+                    AntiVoid.Connect = nil
+                end
+            end
+        end
+    })
+
+    local AntiVoidLaunch, AntiVoidTP, AntiVoidJump = {}, {}, nil
+    AntiVoid.Toggle.Functions.Settings.Dropdown({
+        Name = "Mode",
+        Description = "Mode to prevent you from falling into the void",
+        Default = "Launch",
+        Options = {"Launch", "Teleport", "Jump"},
+        Flag = "AntiVoidMode",
+        Callback = function(self, value)
+            AntiVoid.Settings.Mode = value
+            task.spawn(function()
+                repeat task.wait() until #AntiVoidLaunch == 3 and #AntiVoidTP == 2 and AntiVoidJump
+                for _, v in next, AntiVoidLaunch do
+                    v.Functions.SetVisiblity(value == "Launch")
+                end
+                for _, v in next, AntiVoidTP do
+                    v.Functions.SetVisiblity(value == "Teleport")
+                end
+                AntiVoidJump.Functions.SetVisiblity(value == "Jump")
+            end)
+        end
+    })
+
+    table.insert(AntiVoidLaunch, AntiVoid.Toggle.Functions.Settings.Slider({
+        Name = "Loop",
+        Description = "How long should the loop repeat to launch you",
+        Min = 5,
+        Max = 40,
+        Default = 20,
+        Flag = "AntiVoidLoop",
+        Callback = function(self, value)
+            AntiVoid.Settings.Loop = value
+        end
+    }))
+
+    table.insert(AntiVoidLaunch, AntiVoid.Toggle.Functions.Settings.Slider({
+        Name = "Add",
+        Description = "Height to add to the accurate launch",
+        Min = 5,
+        Max = 15,
+        Default = 8,
+        Flag = "AntiVoidAdd",
+        Callback = function(self, value)
+            AntiVoid.Settings.Add = value
+        end
+    }))
+
+    table.insert(AntiVoidLaunch, AntiVoid.Toggle.Functions.Settings.Slider({
+        Name = "Delay",
+        Description = "Delay between launches",
+        Min = 0.1,
+        Max = 0.6,
+        Default = 0.4,
+        Decimals = 2,
+        Flag = "AntiVoidDelay",
+        Callback = function(self, value)
+            AntiVoid.Settings.Del = value
+        end
+    }))
+
+    table.insert(AntiVoidTP, AntiVoid.Toggle.Functions.Settings.Slider({
+        Name = "Times",
+        Description = "Amount of times to teleport you",
+        Min = 1,
+        Max = 5,
+        Default = 3,
+        Flag = "AntiVoidTimes",
+        Callback = function(self, value)
+            AntiVoid.Settings.Times = value
+        end
+    }))
+
+    table.insert(AntiVoidTP, AntiVoid.Toggle.Functions.Settings.Slider({
+        Name = "Power",
+        Description = "Power of the teleportation process",
+        Min = 5,
+        Max = 15,
+        Default = 10,
+        Flag = "AntiVoidPower",
+        Callback = function(self, value)
+            AntiVoid.Settings.Power = value
+        end
+    }))
+
+    AntiVoidJump = AntiVoid.Toggle.Functions.Settings.Slider({
+        Name = "Jumps",
+        Description = "How many times to jump",
+        Min = 3,
+        Max = 15,
+        Default = 7,
+        Flag = "AntiVoidJumps",
+        Callback = function(self, value)
+            AntiVoid.Settings.Jumps = value
+        end
+    })
+
+    AntiVoid.Toggle.Functions.Settings.Slider({
+        Name = "Visibility",
+        Description = "How visible should the AntiVoid part be",
+        Min = 0,
+        Max = 1,
+        Default = 0.5,
+        Decimals = 2,
+        Flag = "AntiVoidVisibility",
+        Callback = function(self, value)
+            AntiVoid.Settings.Visible = value
+        end
+    })
+
+    AntiVoid.Toggle.Functions.Settings.Dropdown({
+        Name = "Material",
+        Description = "Material of the AntiVoid part",
+        Default = "ForceField",
+        Options = Materials,
+        Flag = "AntiVoidMaterial",
+        Callback = function(self, value)
+            AntiVoid.Settings.Material = value
+        end
+    })
+
+    AntiVoid.Toggle.Functions.Settings.TextBox({
+        Name = "Color",
+        Description = "Color to highlight the AntiVoid part",
+        Default = "100, 100, 100",
+        Flag = "AntiVoidColor",
+        Callback = function(self, value)
+            local color = GetColor(value)
+            if color then
+                AntiVoid.Settings.Color = color
+            end
+        end
+    })
+end)();
+
+(function()
+    local AutoClicker = {
+        Settings = {
+            Blocks = 30,
+            CPS = 30,
+            Mode = "Simple",
+            BlocksEnabled = true
+        },
+        Enabled = false,
+        Running = false,
+        Connect = {}
+    }
+
+    local AutoClick = function()
+        if AutoClicker.Running then
+            AutoClicker.Running = false
+            task.wait()
+        end
+        AutoClicker.Running = true
+
+        task.spawn(function()
+            repeat
+                local Time = 0
+                if not GameData.Modules.App:isLayerOpen(GameData.Modules.UI.MAIN) then
+                    local CPS = AutoClicker.Settings.CPS
+                    if AutoClicker.Settings.Mode == "Random" then
+                        CPS = math.random(1, 50)
+                    end
+
+                    local CurrentItem = GetInventory().hand
+                    local Count = AutoClicker.Settings.Mode == "Burst" and 3 or 1
+
+                    if CurrentItem and CurrentItem.itemType then
+                        local Item = GameData.Modules.ItemMeta[CurrentItem.itemType]
+                        if Item then
+                            if Item.sword and not GameData.Controllers.Dao.chargingMaid then
+                                for _ = 1, Count do
+                                    GameData.Controllers.Sword:swingSwordAtMouse(0)
+                                    Time = 1 / CPS
+                                end
+                            elseif Item.block and AutoClicker.Settings.BlocksEnabled then
+                                local Mouse = GameData.Controllers.Place.blockPlacer and GameData.Controllers.Place.blockPlacer.clientManager:getBlockSelector():getMouseInfo(0)
+                                if Mouse then
+                                    for _ = 1, Count do
+                                        task.spawn(function()
+                                            GameData.Controllers.Place.blockPlacer:placeBlock(Mouse.placementPosition)
+                                        end)
+                                    end
+                                    Time = AutoClicker.Settings.Mode == "Simple" and AutoClicker.Settings.Blocks or CPS
+                                end
+                            end
+                        end
+                    end
+                end
+                task.wait(Time)
+            until not AutoClicker.Running or not AutoClicker.Enabled
+        end)
+    end
+
+    AutoClicker.Toggle = Tabs.Combat.Functions.NewModule({
+        Name = "AutoClicker",
+        Description = "Automatically clicks for you",
+        Icon = "rbxassetid://114020023156214",
+        Flag = "AutoClicker",
+        Callback = function(self, callback)
+            AutoClicker.Enabled = callback
+            if callback then
+                table.insert(AutoClicker.Connect, UIS.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                        AutoClick()
+                    end
+                end))
+
+                table.insert(AutoClicker.Connect, UIS.InputEnded:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                        AutoClicker.Running = false
+                    end
+                end))
+            else
+                AutoClicker.Running = false
+                for _, v in next, AutoClicker.Connect do
+                    v:Disconnect()
+                end
+                AutoClicker.Connect = {}
+            end
+        end
+    })
+
+    AutoClicker.Toggle.Functions.Settings.Dropdown({
+        Name = "Mode",
+        Description = "Changes the way it clicks",
+        Options = {"Simple", "Burst", "Random"},
+        Default = "Simple",
+        Flag = "AutoClickerMode",
+        Callback = function(self, value)
+            AutoClicker.Settings.Mode = value
+        end
+    })
+
+    local BlocksCPS
+    AutoClicker.Toggle.Functions.Settings.MiniToggle({
+        Name = "Blocks",
+        Description = "Places blocks when you click",
+        Flag = "AutoClickerBlocks",
+        Default = true,
+        Callback = function(self, value)
+            AutoClicker.Settings.BlocksEnabled = value
+            task.spawn(function()
+                repeat task.wait() until BlocksCPS
+                BlocksCPS.Functions.SetVisiblity(value)
+            end)
+        end
+    })
+
+    BlocksCPS = AutoClicker.Toggle.Functions.Settings.Slider({
+        Name = "Blocks CPS",
+        Description = "How many times you want to place blocks each second",
+        Min = 1,
+        Max = 50,
+        Default = 30,
+        Hide = true,
+        Flag = "AutoClickerBlocksCPS",
+        Callback = function(self, value)
+            AutoClicker.Settings.Blocks = value
+        end
+    })
+
+    AutoClicker.Toggle.Functions.Settings.Slider({
+        Name = "Hit CPS",
+        Description = "How many times you want to swing your sword each second",
+        Min = 1,
+        Max = 50,
+        Default = 20,
+        Flag = "AutoClickerHitCPS",
+        Callback = function(self, value)
+            AutoClicker.Settings.CPS = value
         end
     })
 end)()
