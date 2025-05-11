@@ -195,8 +195,7 @@ local GameData = {
         Store = require(LP.PlayerScripts.TS.ui.store).ClientStore,
         SyncEvents = require(LP.PlayerScripts.TS["client-sync-events"]).ClientSyncEvents,
         TeamUpgradeMeta = require(Rep.TS.games.bedwars["team-upgrade"]["team-upgrade-meta"]),
-        UI = require(Rep.rbxts_include.node_modules["@easy-games"]["game-core"].out).UILayers,
-        Wind = Knit.Controllers.WindWalkerController
+        UI = require(Rep.rbxts_include.node_modules["@easy-games"]["game-core"].out).UILayers
     },
     Remotes = {},
     Events = {
@@ -261,8 +260,8 @@ if not HitRemoteName then
     return
 end
 
-local oldWind, speedOrb = GameData.Modules.Wind.updateJump, 0
-GameData.Modules.Wind.updateJump = function(self, orb, ...)
+local oldWind, speedOrb = GameData.Controllers.Wind.updateJump, 0
+GameData.Controllers.Wind.updateJump = function(self, orb, ...)
     if Functions.IsAlive() then
         speedOrb = orb or 0
     end
@@ -3587,7 +3586,8 @@ end)();
 (function()
     local BanShield = {
         Settings = {Mode = "Hook"},
-        Hook = nil
+        Hook = nil,
+        OldGet = nil
     }
 
     BanShield.Toggle = Tabs.Utility.Functions.NewModule({
@@ -3605,6 +3605,15 @@ end)();
                             end
                             return BanShield.Hook(self, ...)
                         end)
+
+                        BanShield.OldGet = GameData.Modules.Remotes.Get
+                        GameData.Modules.Remotes.Get = function(a, item: string, ...)
+                            if item:lower():find("detection") then
+                                return {SendToServer = function() end}
+                            end
+
+                            return BanShield.OldGet(a, item, ...)
+                        end
                     end
                 else
                     local BanShieldRaw: table = getrawmetatable(game)
@@ -3636,6 +3645,8 @@ end)();
 
                     setreadonly(BanShieldRaw, true)
                 end
+            else
+                GameData.Modules.Remotes.Get = BanShield.OldGet
             end
         end
     })
@@ -4171,7 +4182,7 @@ end)();
             local val = billboard.Adornee:FindFirstChild("ChestFolderValue") and billboard.Adornee.ChestFolderValue.Value:GetChildren()
             if not val then billboard.Enabled = false; return end
 
-            for _, v in billboard.Frame:GetChildren() do
+            for _, v in frame:GetChildren() do
                 if v:IsA("ImageLabel") then v:Destroy() end
             end
             billboard.Enabled = false
@@ -4188,7 +4199,7 @@ end)();
                 
                 if not found[name] and (match or table.find(ChestESP.Settings.Items, name)) then
                     found[name], billboard.Enabled = true, true
-                    local new = Instance.new("ImageLabel", billboard.Frame)
+                    local new = Instance.new("ImageLabel", frame)
                     new.Size, new.BackgroundTransparency, new.Image = UDim2.fromOffset(27, 27), 1, GameData.Modules.ItemMeta[name].image
                 end
             end
