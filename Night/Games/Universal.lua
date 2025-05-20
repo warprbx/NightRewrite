@@ -43,11 +43,11 @@ local tabs = {
 
 local lighting = Functions.cloneref(game:GetService("Lighting")) :: Lighting
 local plrs = Functions.cloneref(game:GetService("Players")) :: Players
-local uis = Functions.cloneref(game:GetService("UserInputService")) :: UserInputService
 local ws = Functions.cloneref(game:GetService("Workspace")) :: Workspace
 local rs = Functions.cloneref(game:GetService("RunService")) :: RunService
-local ts = Functions.cloneref(game:GetService("TweenService")) :: TweenService
+local virtual = Functions.cloneref(game:GetService("VirtualUser")) :: VirtualUser
 local lp = plrs.LocalPlayer
+local cam = ws.CurrentCamera
 
 local SpeedData = {
     Enabled = false,
@@ -1504,6 +1504,24 @@ FovData.Toggle.Functions.Settings.Slider({
         FovData.Fov = callback
         if FovData.Toggle.Data.Enabled then
             ws.CurrentCamera.FieldOfView = callback
+        end
+    end
+})
+
+tabs.World.Functions.NewModule({
+    Name = "AntiAFK",
+    Description = "Blocks Roblox from kicking you while being AFK",
+    Icon = "rbxassetid://112131645518908",
+    Flag = "AntiAFK",
+    Callback = function(self, callback)
+        if callback then
+            lp.Idled:Connect(function()
+                if not self.Data.Enabled then return end
+                virtual:CaptureController()
+                virtual:ClickButton2(Vector2.new())
+                virtual:Button2Up(Vector2.new(), cam.CFrame)
+                virtual:Button2Down(Vector2.new(), cam.CFrame)
+            end)
         end
     end
 })
