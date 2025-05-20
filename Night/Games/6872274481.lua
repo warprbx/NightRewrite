@@ -4808,26 +4808,6 @@ end)();
 end)();
 
 (function()
-    Tabs.World.Functions.NewModule({
-        Name = "AntiAFK",
-        Description = "Blocks Roblox from kicking you while being AFK",
-        Icon = "rbxassetid://112131645518908",
-        Flag = "AntiAFK",
-        Callback = function(self, callback)
-            if callback then
-                LP.Idled:Connect(function()
-                    if not self.Data.Enabled then return end
-                    Virtual:CaptureController()
-                    Virtual:ClickButton2(Vector2.new())
-                    Virtual:Button2Up(Vector2.new(), Cam.CFrame)
-                    Virtual:Button2Down(Vector2.new(), Cam.CFrame)
-                end)
-            end
-        end
-    })
-end)();
-
-(function()
     Tabs.Movement.Functions.NewModule({
         Name = "Desync",
         Description = "Makes your server movement delayed",
