@@ -151,12 +151,13 @@ end
 
 local KnitPath = Rep.rbxts_include.node_modules["@easy-games"].knit
 local Knit = require(KnitPath.src).KnitClient
-repeat task.wait() until Knit and Cam:FindFirstChild("Viewmodel")
+repeat task.wait(2) until Knit and Cam:FindFirstChild("Viewmodel") and workspace:FindFirstChild("Map")
 
 local GameData = {
     Controllers = {
         Balloon = Knit.Controllers.BalloonController,
         BlockBreaker = Knit.Controllers.BlockBreakController.blockBreaker,
+        Chest = Knit.Controllers.ChestController,
         Dao = Knit.Controllers.DaoController,
         Place = Knit.Controllers.BlockPlacementController,
         Queue = Knit.Controllers.QueueController,
@@ -167,8 +168,7 @@ local GameData = {
         TeamCrate = Knit.Controllers.TeamCrateController,
         TeamUpgrades = Knit.Controllers.TeamUpgradeController,
         ViewModel = Knit.Controllers.ViewmodelController,
-        Wind = Knit.Controllers.WindWalkerController,
-        Chest = Knit.Controllers.ChestController
+        Wind = Knit.Controllers.WindWalkerController
     },
     Modules = {
         Animation = require(Rep.TS.animation["animation-util"]).GameAnimationUtil,
@@ -187,6 +187,7 @@ local GameData = {
         Network = require(LP.PlayerScripts.TS.lib.network),
         PlayerUtil = require(Rep.TS.player["player-util"]).GamePlayerUtil,
         Projectile = require(LP.PlayerScripts.TS.controllers.global.combat.projectile["projectile-controller"]).ProjectileController,
+        ProjMeta = require(Rep.TS.projectile['projectile-meta']).ProjectileMeta,
         Promise = require(KnitPath.src.Knit.Util.Promise),
         Remotes = require(Rep.TS.remotes).default.Client,
         Shop = require(Rep.TS.games.bedwars.shop["bedwars-shop"]).BedwarsShop,
@@ -197,7 +198,7 @@ local GameData = {
         TeamUpgradeMeta = require(Rep.TS.games.bedwars["team-upgrade"]["team-upgrade-meta"]),
         UI = require(Rep.rbxts_include.node_modules["@easy-games"]["game-core"].out).UILayers
     },
-    Remotes = {},
+    Remotes = {Set = Rep.rbxts_include.node_modules['@rbxts'].net.out._NetManaged.SetInvItem},
     Events = {
         Damage = Instance.new("BindableEvent"),
         Death = Instance.new("BindableEvent")
@@ -320,7 +321,8 @@ local GetEntities = function()
         Entities[v] = {
             PrimaryPart = v.PrimaryPart,
             Player = Plrs:GetPlayerFromCharacter(v),
-            Health = v:GetAttribute("Health") or 0
+            Health = v:GetAttribute("Health") or 0,
+            Humanoid = v.Humanoid
         }
         if table.find(CS:GetTags(v), "Drone") then
             Entities[v].Drone = {Team = v:GetAttribute("Team"), Player = v:GetAttribute("PlayerUserId")}
@@ -1177,9 +1179,7 @@ local KillAuraData = {
                                 local itemMeta = GameData.Modules.ItemMeta[CurrentItem.itemType]
                                 if not itemMeta or not itemMeta.sword then
                                     if KillAuraData.Settings.AutomaticallySwitch then
-                                        GameData.Modules.Remotes:Get("SetInvItem"):CallServerAsync({
-                                            ["hand"] = Sword.Sword.tool
-                                        })
+                                        GameData.Remotes.Set:InvokeServer({hand = Sword.Sword.tool})
                                     else
                                         if KillAuraData.Settings.HandCheck then continue end
                                     end
@@ -1207,18 +1207,13 @@ local KillAuraData = {
 
                                 local itemMeta
                                 if not CurrentItem or not CurrentItem.tool or not CurrentItem.itemType then
-                                    GameData.Modules.Remotes:Get("SetInvItem"):CallServerAsync({
-                                        ["hand"] = Sword.Sword.tool
-                                    })
+                                    GameData.Remotes.Set:InvokeServer({hand = Sword.Sword.tool})
                                 else
                                     itemMeta = GameData.Modules.ItemMeta[CurrentItem.itemType]
                                     if not itemMeta or not itemMeta.sword then
-                                        GameData.Modules.Remotes:Get("SetInvItem"):CallServerAsync({
-                                            ["hand"] = Sword.Sword.tool
-                                        })
+                                        GameData.Remotes.Set:InvokeServer({hand = Sword.Sword.tool})
                                     end
                                 end
-
 
                                 task.spawn(function()
                                     if not KillAuraData.Settings.Visuals.Highlights[NearestEntity] and KillAuraData.Settings.Visuals.Highlight then
@@ -1290,7 +1285,6 @@ local KillAuraData = {
                                     end
                                 end)
 
-
                                 local lastswing = Random.new():NextNumber(3, 40)
                                 if KillAuraData.Settings.LastSwingTimeEnabled then
                                     lastswing = GameData.Controllers.Sword.lastSwingServerTimeDelta
@@ -1321,9 +1315,7 @@ local KillAuraData = {
                                 
                                 if CurrentItem and CurrentItem.tool and CurrentItem.tool ~= Sword.Sword.tool then
                                     if not KillAuraData.Settings.AutomaticallySwitch then
-                                        GameData.Modules.Remotes:Get("SetInvItem"):CallServerAsync({
-                                            ["hand"] = CurrentItem.tool
-                                        })
+                                        GameData.Remotes.Set:InvokeServer({hand = CurrentItem.tool})
                                     end
                                 end
 
@@ -1336,7 +1328,7 @@ local KillAuraData = {
                                     end)
                                 end
 
-                                for i,v in KillAuraData.Settings.Visuals.Highlights do
+                                for i, v in KillAuraData.Settings.Visuals.Highlights do
                                     v:Destroy()
                                     KillAuraData.Settings.Visuals.Highlights[i] = nil
                                 end
@@ -1378,8 +1370,8 @@ local KillAuraData = {
         Name = "Range",
         Description = "Range to start attacking",
         Min = 0,
-        Max = 18,
-        Default = 18,
+        Max = 20,
+        Default = 20,
         Flag = "KillAuraRange",
         Callback = function(self, callback)
             KillAuraData.Settings.Range = callback
@@ -1989,7 +1981,6 @@ local CanBreak = function(block: Instance, HandCheck: boolean)
     return false
 end
 
-
 (function()
     local NukerData = {
         Settings = {
@@ -2104,7 +2095,6 @@ end
         Min = 0,
         Max = 1,
         Default = 0.1,
-        Hide = true,
         Flag = "NukerDelay",
         Callback = function(self, callback)
             NukerData.Settings.Delay = callback
@@ -3077,7 +3067,7 @@ end
                 repeat
                     local Shop = GetNearestShop("upgrade")
                     if Shop.Shop and AutoUpgradeData.Settings.Range >= Shop.Distance then
-                        local TeamCrate = GameData.Controllers.TeamCrate:getTeamCrate()
+                        local TeamCrate = pcall(function() return GameData.Controllers.TeamCrate:getTeamCrate() end)
                         if TeamCrate and TeamCrate:FindFirstChild("ChestFolderValue") then
                             GameData.Controllers.Chest:openChest(TeamCrate.ChestFolderValue.Value)
                         end
@@ -3213,9 +3203,7 @@ end
                 end
 
                 local CurrentItem = GetInventory().hand
-                GameData.Modules.Remotes:Get("SetInvItem"):CallServerAsync({
-                    hand = Fireball.Item.tool
-                })
+                GameData.Remotes.Set:InvokeServer({hand = Fireball.Item.tool})
 
                 local CanRun = false
                 LongJumpData.Connections.Damage = GameData.Events.Damage.Event:Connect(function(Damage: {Player: Instance, DamageType: number})
@@ -3231,9 +3219,7 @@ end
                 repeat task.wait() until CanRun
 
                 if CurrentItem and CurrentItem.tool then
-                    GameData.Modules.Remotes:Get("SetInvItem"):CallServerAsync({
-                        hand = CurrentItem.tool
-                    })
+                    GameData.Remotes.Set:InvokeServer({hand = CurrentItem.tool})
                 end
 
                 local Velocity = LongJumpData.Settings.Height + 5
@@ -3450,7 +3436,7 @@ end
     
     AutoKit.Toggle = Tabs.Utility.Functions.NewModule({
         Name = "AutoKit",
-        Description = "Automatically uses your kits ability",
+        Description = "Automatically uses your kit's ability",
         Icon = "rbxassetid://126871982066452",
         Flag = "AutoKit",
         Callback = function(self, callback)
@@ -3587,7 +3573,7 @@ end)();
     local BanShield = {
         Settings = {Mode = "Hook"},
         Hook = nil,
-        OldGet = nil
+        Old = nil
     }
 
     BanShield.Toggle = Tabs.Utility.Functions.NewModule({
@@ -3605,15 +3591,6 @@ end)();
                             end
                             return BanShield.Hook(self, ...)
                         end)
-
-                        BanShield.OldGet = GameData.Modules.Remotes.Get
-                        GameData.Modules.Remotes.Get = function(a, item: string, ...)
-                            if item:lower():find("detection") then
-                                return {SendToServer = function() end}
-                            end
-
-                            return BanShield.OldGet(a, item, ...)
-                        end
                     end
                 else
                     local BanShieldRaw: table = getrawmetatable(game)
@@ -3645,8 +3622,16 @@ end)();
 
                     setreadonly(BanShieldRaw, true)
                 end
+
+                BanShield.Old = GameData.Modules.Remotes.Get
+                GameData.Modules.Remotes.Get = function(kanye, item: string, ...)
+                    if item:lower():find("detection") then
+                        return {SendToServer = function() end}
+                    end
+                    return BanShield.Old(kanye, item, ...)
+                end
             else
-                GameData.Modules.Remotes.Get = BanShield.OldGet
+                GameData.Modules.Remotes.Get = BanShield.Old
             end
         end
     })
@@ -3704,7 +3689,7 @@ end
                 repeat
                     AntiHit.Clone = nil
                     AntiHit.Connect = nil
-                
+
                     local target = GetNearestEntity()
                     if target.Entity and target.Distance <= AntiHit.Settings.Range and Functions.IsAlive() then
                         DestroyClone()
@@ -4034,7 +4019,7 @@ local SpiderData = {
     Settings = {
         Speed = 50,
         Dist = 2,
-        AntiSuff = true,
+        AntiSuff = false,
         Mode = "Smooth"
     },
     Ray = nil
@@ -4182,7 +4167,7 @@ end)();
             local val = billboard.Adornee:FindFirstChild("ChestFolderValue") and billboard.Adornee.ChestFolderValue.Value:GetChildren()
             if not val then billboard.Enabled = false; return end
 
-            for _, v in frame:GetChildren() do
+            for _, v in billboard.Frame:GetChildren() do
                 if v:IsA("ImageLabel") then v:Destroy() end
             end
             billboard.Enabled = false
@@ -4199,7 +4184,7 @@ end)();
                 
                 if not found[name] and (match or table.find(ChestESP.Settings.Items, name)) then
                     found[name], billboard.Enabled = true, true
-                    local new = Instance.new("ImageLabel", frame)
+                    local new = Instance.new("ImageLabel", billboard.Frame)
                     new.Size, new.BackgroundTransparency, new.Image = UDim2.fromOffset(27, 27), 1, GameData.Modules.ItemMeta[name].image
                 end
             end
@@ -4291,7 +4276,169 @@ end)();
             ChestESP.Settings.Corner = value
         end
     })
-end)();
+end)()
+
+local Aim = function(start, speed, gravity, pos, velo, prediction, height, params)
+    local eps = 1/1000000000
+    local getVal = function(d) return math.abs(d) < eps end
+    local getNrRoot = function(x) return x^(1/3) * (x < 0 and -1 or 1) end
+
+    local getPrediction = function(a, b, c)
+        local half_b, constant = b / (2 * a), c / a
+        local discriminant = half_b * half_b - constant
+
+        if getVal(discriminant) then
+            return -half_b
+        elseif discriminant > 0 then
+            local sqrt_discriminant = math.sqrt(discriminant)
+            return sqrt_discriminant - half_b, -sqrt_discriminant - half_b
+        end
+        return 0
+    end
+
+    local getSqrt = function(a, b, c, d)
+        local root0, root1, root2
+        local numRoots, sub
+        local A, B, C = b / a, c / a, d / a
+        local sqA = A * A
+        local p, q = (1/3) * (-(1/3) * sqA + B), 0.5 * ((2/27) * A * sqA - (1/3) * A * B + C)
+        local cbP = p * p * p
+        local discriminant = q * q + cbP
+
+        if getVal(discriminant) then
+            if getVal(q) then
+                root0, numRoots = 0, 1
+            else
+                local u = getNrRoot(-q)
+                root0, root1, numRoots = 2 * u, -u, 2
+            end
+        elseif discriminant < 0 then
+            local phi = (1/3) * math.acos(-q / math.sqrt(-cbP))
+            local t = 2 * math.sqrt(-p)
+            root0, root1, root2 = t * math.cos(phi), -t * math.cos(phi + math.pi/3), -t * math.cos(phi - math.pi/3)
+            numRoots = 3
+        else
+            local sqrtDiscriminant = math.sqrt(discriminant)
+            local u, v = getNrRoot(sqrtDiscriminant - q), -getNrRoot(sqrtDiscriminant + q)
+            root0, numRoots = u + v, 1
+        end
+
+        sub = (1/3) * A
+        if numRoots > 0 then root0 = root0 - sub end
+        if numRoots > 1 then root1 = root1 - sub end
+        if numRoots > 2 then root2 = root2 - sub end
+
+        return root0, root1, root2
+    end
+
+    local getNewPred = function(a, b, c, d, e)
+        local root0, root1, root2, root3
+        local coeffs = {}
+        local z, u, v, sub
+        local A, B, C, D = b / a, c / a, d / a, e / a
+        local sqA = A * A
+        local p, q, r = -0.375 * sqA + B, 0.125 * sqA * A - 0.5 * A * B + C, -(3/256) * sqA * sqA + 0.0625 * sqA * B - 0.25 * A * C + D
+        local numRoots
+
+        if getVal(r) then
+            coeffs[3], coeffs[2], coeffs[1], coeffs[0] = q, p, 0, 1
+            local results = {getSqrt(coeffs[0], coeffs[1], coeffs[2], coeffs[3])}
+            numRoots = #results
+            root0, root1, root2 = results[1], results[2], results[3]
+        else
+            coeffs[3], coeffs[2], coeffs[1], coeffs[0] = 0.5 * r * p - 0.125 * q * q, -r, -0.5 * p, 1
+            root0, root1, root2 = getSqrt(coeffs[0], coeffs[1], coeffs[2], coeffs[3])
+            z = root0
+
+            u, v = z * z - r, 2 * z - p
+            u = getVal(u) and 0 or (u > 0 and math.sqrt(u) or nil)
+            v = getVal(v) and 0 or (v > 0 and math.sqrt(v) or nil)
+            if not u or not v then return end
+
+            coeffs[2], coeffs[1], coeffs[0] = z - u, q < 0 and -v or v, 1
+            local results = {getPrediction(coeffs[0], coeffs[1], coeffs[2])}
+            numRoots = #results
+            root0, root1 = results[1], results[2]
+
+            coeffs[2], coeffs[1], coeffs[0] = z + u, q < 0 and v or -v, 1
+            if numRoots < 4 then
+                local results1 = {getPrediction(coeffs[0], coeffs[1], coeffs[2])}
+                if numRoots == 0 then
+                    root0, root1 = results1[1], results1[2]
+                elseif numRoots == 1 then
+                    root1, root2 = results1[1], results1[2]
+                elseif numRoots == 2 then
+                    root2, root3 = results1[1], results1[2]
+                end
+                numRoots = numRoots + #results1
+            end
+        end
+
+        sub = 0.25 * A
+        if numRoots > 0 then root0 = root0 - sub end
+        if numRoots > 1 then root1 = root1 - sub end
+        if numRoots > 2 then root2 = root2 - sub end
+        if numRoots > 3 then root3 = root3 - sub end
+
+        return {root3, root2, root1, root0}
+    end
+
+    local displacement = pos - start
+    local velX, velY, velZ = velo.X, velo.Y, velo.Z
+    local dispX, dispY, dispZ = displacement.X, displacement.Y, displacement.Z
+    local halfGravity = -0.5 * gravity
+
+    if math.abs(velY) > 0.01 and prediction and prediction > 0 then
+        local estTime = displacement.Magnitude / speed
+        for _ = 1, 100 do
+            velY = velY - (0.5 * prediction) * estTime
+            local velocity = velo * 0.016
+            local ray = workspace.Raycast(workspace, Vector3.new(pos.X, pos.Y, pos.Z), Vector3.new(velocity.X, (velY * estTime) - height, velocity.Z), params)
+            if ray then
+                local newTarget = ray.Position + Vector3.new(0, height, 0)
+                estTime = estTime - math.sqrt(((pos - newTarget).Magnitude * 2) / prediction)
+                pos = newTarget
+                dispY = (pos - start).Y
+                velY = 0
+                break
+            else
+                break
+            end
+        end
+    end
+
+    local solutions = getNewPred(
+        halfGravity * halfGravity,
+        -2 * velY * halfGravity,
+        velY * velY - 2 * dispY * halfGravity - speed * speed + velX * velX + velZ * velZ,
+        2 * dispY * velY + 2 * dispX * velX + 2 * dispZ * velZ,
+        dispY * dispY + dispX * dispX + dispZ * dispZ
+    )
+
+    if solutions then
+        local posRoots = {}
+        for _, v in next, solutions do
+            if v > 0 then
+                table.insert(posRoots, v)
+            end
+        end
+        if posRoots[1] then
+            local t = posRoots[1]
+            local d = (dispX + velX * t) / t
+            local e = (dispY + velY * t - halfGravity * t * t) / t
+            local f = (dispZ + velZ * t) / t
+            return start + Vector3.new(d, e, f)
+        end
+        return 0
+    elseif gravity == 0 then
+        local t = displacement.Magnitude / speed
+        local d = (dispX + velX * t) / t
+        local e = (dispY + velY * t - halfGravity * t * t) / t
+        local f = (dispZ + velZ * t) / t
+        return start + Vector3.new(d, e, f)
+    end
+    return 0
+end
 
 (function()
     local ProjectileAimbot = {
@@ -4307,168 +4454,6 @@ end)();
         Old = nil
     }
 
-    local Aim = function(start, speed, gravity, pos, velo, prediction, height, params)
-        local eps = 1/1000000000
-        local getVal = function(d) return math.abs(d) < eps end
-        local getNrRoot = function(x) return x^(1/3) * (x < 0 and -1 or 1) end
-
-        local getPrediction = function(a, b, c)
-            local half_b, constant = b / (2 * a), c / a
-            local discriminant = half_b * half_b - constant
-
-            if getVal(discriminant) then
-                return -half_b
-            elseif discriminant > 0 then
-                local sqrt_discriminant = math.sqrt(discriminant)
-                return sqrt_discriminant - half_b, -sqrt_discriminant - half_b
-            end
-            return 0
-        end
-
-        local getSqrt = function(a, b, c, d)
-            local root0, root1, root2
-            local numRoots, sub
-            local A, B, C = b / a, c / a, d / a
-            local sqA = A * A
-            local p, q = (1/3) * (-(1/3) * sqA + B), 0.5 * ((2/27) * A * sqA - (1/3) * A * B + C)
-            local cbP = p * p * p
-            local discriminant = q * q + cbP
-
-            if getVal(discriminant) then
-                if getVal(q) then
-                    root0, numRoots = 0, 1
-                else
-                    local u = getNrRoot(-q)
-                    root0, root1, numRoots = 2 * u, -u, 2
-                end
-            elseif discriminant < 0 then
-                local phi = (1/3) * math.acos(-q / math.sqrt(-cbP))
-                local t = 2 * math.sqrt(-p)
-                root0, root1, root2 = t * math.cos(phi), -t * math.cos(phi + math.pi/3), -t * math.cos(phi - math.pi/3)
-                numRoots = 3
-            else
-                local sqrtDiscriminant = math.sqrt(discriminant)
-                local u, v = getNrRoot(sqrtDiscriminant - q), -getNrRoot(sqrtDiscriminant + q)
-                root0, numRoots = u + v, 1
-            end
-
-            sub = (1/3) * A
-            if numRoots > 0 then root0 = root0 - sub end
-            if numRoots > 1 then root1 = root1 - sub end
-            if numRoots > 2 then root2 = root2 - sub end
-
-            return root0, root1, root2
-        end
-
-        local getNewPred = function(a, b, c, d, e)
-            local root0, root1, root2, root3
-            local coeffs = {}
-            local z, u, v, sub
-            local A, B, C, D = b / a, c / a, d / a, e / a
-            local sqA = A * A
-            local p, q, r = -0.375 * sqA + B, 0.125 * sqA * A - 0.5 * A * B + C, -(3/256) * sqA * sqA + 0.0625 * sqA * B - 0.25 * A * C + D
-            local numRoots
-
-            if getVal(r) then
-                coeffs[3], coeffs[2], coeffs[1], coeffs[0] = q, p, 0, 1
-                local results = {getSqrt(coeffs[0], coeffs[1], coeffs[2], coeffs[3])}
-                numRoots = #results
-                root0, root1, root2 = results[1], results[2], results[3]
-            else
-                coeffs[3], coeffs[2], coeffs[1], coeffs[0] = 0.5 * r * p - 0.125 * q * q, -r, -0.5 * p, 1
-                root0, root1, root2 = getSqrt(coeffs[0], coeffs[1], coeffs[2], coeffs[3])
-                z = root0
-
-                u, v = z * z - r, 2 * z - p
-                u = getVal(u) and 0 or (u > 0 and math.sqrt(u) or nil)
-                v = getVal(v) and 0 or (v > 0 and math.sqrt(v) or nil)
-                if not u or not v then return end
-
-                coeffs[2], coeffs[1], coeffs[0] = z - u, q < 0 and -v or v, 1
-                local results = {getPrediction(coeffs[0], coeffs[1], coeffs[2])}
-                numRoots = #results
-                root0, root1 = results[1], results[2]
-
-                coeffs[2], coeffs[1], coeffs[0] = z + u, q < 0 and v or -v, 1
-                if numRoots < 4 then
-                    local results1 = {getPrediction(coeffs[0], coeffs[1], coeffs[2])}
-                    if numRoots == 0 then
-                        root0, root1 = results1[1], results1[2]
-                    elseif numRoots == 1 then
-                        root1, root2 = results1[1], results1[2]
-                    elseif numRoots == 2 then
-                        root2, root3 = results1[1], results1[2]
-                    end
-                    numRoots = numRoots + #results1
-                end
-            end
-
-            sub = 0.25 * A
-            if numRoots > 0 then root0 = root0 - sub end
-            if numRoots > 1 then root1 = root1 - sub end
-            if numRoots > 2 then root2 = root2 - sub end
-            if numRoots > 3 then root3 = root3 - sub end
-
-            return {root3, root2, root1, root0}
-        end
-
-        local displacement = pos - start
-        local velX, velY, velZ = velo.X, velo.Y, velo.Z
-        local dispX, dispY, dispZ = displacement.X, displacement.Y, displacement.Z
-        local halfGravity = -0.5 * gravity
-
-        if math.abs(velY) > 0.01 and prediction and prediction > 0 then
-            local estTime = displacement.Magnitude / speed
-            for _ = 1, 100 do
-                velY = velY - (0.5 * prediction) * estTime
-                local velocity = velo * 0.016
-                local ray = workspace.Raycast(workspace, Vector3.new(pos.X, pos.Y, pos.Z), Vector3.new(velocity.X, (velY * estTime) - height, velocity.Z), params)
-                if ray then
-                    local newTarget = ray.Position + Vector3.new(0, height, 0)
-                    estTime = estTime - math.sqrt(((pos - newTarget).Magnitude * 2) / prediction)
-                    pos = newTarget
-                    dispY = (pos - start).Y
-                    velY = 0
-                    break
-                else
-                    break
-                end
-            end
-        end
-
-        local solutions = getNewPred(
-            halfGravity * halfGravity,
-            -2 * velY * halfGravity,
-            velY * velY - 2 * dispY * halfGravity - speed * speed + velX * velX + velZ * velZ,
-            2 * dispY * velY + 2 * dispX * velX + 2 * dispZ * velZ,
-            dispY * dispY + dispX * dispX + dispZ * dispZ
-        )
-
-        if solutions then
-            local posRoots = {}
-            for _, v in next, solutions do
-                if v > 0 then
-                    table.insert(posRoots, v)
-                end
-            end
-            if posRoots[1] then
-                local t = posRoots[1]
-                local d = (dispX + velX * t) / t
-                local e = (dispY + velY * t - halfGravity * t * t) / t
-                local f = (dispZ + velZ * t) / t
-                return start + Vector3.new(d, e, f)
-            end
-            return 0
-        elseif gravity == 0 then
-            local t = displacement.Magnitude / speed
-            local d = (dispX + velX * t) / t
-            local e = (dispY + velY * t - halfGravity * t * t) / t
-            local f = (dispZ + velZ * t) / t
-            return start + Vector3.new(d, e, f)
-        end
-        return 0
-    end
-
     ProjectileAimbot.Toggle = Tabs.Combat.Functions.NewModule({
         Name = "ProjectileAimbot",
         Description = "Silently adjusts your aim towards the enemy",
@@ -4480,8 +4465,8 @@ end)();
                     repeat 
                         if Drawing then
                             local vec = Vector2.new(0, 0)
-                            if LP:GetMouse() and workspace.CurrentCamera then
-                                local pos = workspace.CurrentCamera:WorldToScreenPoint(LP:GetMouse().Hit.Position)
+                            if LP:GetMouse() and Cam then
+                                local pos = Cam:WorldToScreenPoint(LP:GetMouse().Hit.Position)
                                 if pos then
                                     vec = Vector2.new(pos.X, pos.Y + (ProjectileAimbot.Settings.Size / 2))
                                 end
@@ -4613,6 +4598,178 @@ end)();
 end)();
 
 (function()
+    local ProjectileAura = {
+        Settings = {
+            Range = 30,
+            Speed = 100,
+            Power = 50,
+            Delay = 0.1,
+            TP = false
+        }
+    }
+
+	local DelayMap = {}
+	local GetAmmo = function(Check)
+		if not Check.ammoItemTypes then return nil end
+		local Inv = GetInventory().items
+		for i = 1, #Inv do
+			local Obj = Inv[i]
+			for j = 1, #Check.ammoItemTypes do
+				if Obj.itemType == Check.ammoItemTypes[j] then
+					return Check.ammoItemTypes[j]
+				end
+			end
+		end
+		return nil
+	end
+
+	local ProjNames = {arrow = true, snowball = true}
+	local GetTools = function()
+		local Found = {}
+		local Inv = GetInventory().items
+		for i = 1, #Inv do
+			local It = Inv[i]
+			local Data = GameData.Modules.ItemMeta[It.itemType]
+			local Src = Data and Data.projectileSource
+			if Src then
+				local Ammo = GetAmmo(Src)
+				if Ammo and ProjNames[Ammo] then
+					Found[#Found + 1] = {
+						Item = It,
+						Ammo = Ammo,
+						Proj = Src.projectileType(Ammo),
+						Meta = Src
+					}
+				end
+			end
+		end
+		return Found
+	end
+
+    local CheckProj = function(Bool, Obj)
+        if not Bool then
+            DelayMap[Obj.Item.itemType] = tick()
+        else
+            local Sounds = Obj.Meta.launchSound
+            if Sounds and #Sounds > 0 then
+                GameData.Modules.Sound:playSound(Sounds[1])
+            end
+        end
+    end
+
+	ProjectileAura.Toggle = Tabs.Combat.Functions.NewModule({
+		Name = "ProjectileAura",
+		Description = "Automatically fires at targets using projectiles",
+		Icon = "rbxassetid://96350496887596",
+		Flag = "ProjectileAura",
+		Callback = function(self, callback)
+			if callback then
+				repeat
+					local Target = GetNearestEntity()
+					if Target.Entity and Target.Distance <= ProjectileAura.Settings.Range and Functions.IsAlive() and not KillAuraData.Attacking then
+						local Pos = LP.Character.HumanoidRootPart.Position
+						local Tools = GetTools()
+                        for i = 1, #Tools do
+                            local Obj = Tools[i]
+                            if (DelayMap[Obj.Item.itemType] or 0) < tick() then
+                                local ProjData = GameData.Modules.ProjMeta[Obj.Proj]
+                                local AimPos = Aim(Pos, ProjData.launchVelocity, ProjData.gravitationalAcceleration or 196.2, Target.EntityData.PrimaryPart.Position, Target.EntityData.PrimaryPart.Velocity, workspace.Gravity, Target.EntityData.Humanoid.HipHeight, groundRay)
+                                if AimPos then
+                                    GameData.Remotes.Set:InvokeServer({hand = Obj.Item.tool})
+
+                                    task.spawn(function()
+                                        local Args = {
+                                            Obj.Item.tool,
+                                            Obj.Ammo,
+                                            Obj.Proj,
+                                            CFrame.new(Pos, AimPos).Position,
+                                            Pos,
+                                            (CFrame.new(Pos, AimPos)).LookVector * ProjData.launchVelocity,
+                                            HttpService:GenerateGUID(true),
+                                            {drawDurationSec = ProjectileAura.Settings.Speed / 100, shotId = HttpService:GenerateGUID(false)},
+                                            workspace:GetServerTimeNow() - (math.pow(10, -2) * ((ProjectileAura.Settings.Power - 5) / 2))
+                                        }
+
+                                        if not ProjectileAura.Settings.TP then
+                                            GameData.Modules.Projectile:createLocalProjectile(Obj.Meta, Obj.Ammo, Obj.Proj, CFrame.new(Pos, AimPos).Position, HttpService:GenerateGUID(true), (CFrame.new(Pos, AimPos)).LookVector * ProjData.launchVelocity, {drawDurationSeconds = 1})
+                                        end
+
+                                        local Fired = Rep.rbxts_include.node_modules["@rbxts"].net.out._NetManaged.ProjectileFire:InvokeServer(Args[1], Args[2], Args[3], Args[4], Args[5], Args[6], Args[7], Args[8], Args[9], Args[10])
+                                        CheckProj(Fired, Obj)
+                                    end)
+
+                                    DelayMap[Obj.Item.itemType] = tick() + Obj.Meta.fireDelaySec
+                                    task.wait(ProjectileAura.Settings.Delay / 2)
+                                end
+                            end
+                        end
+                    end
+                    task.wait(ProjectileAura.Settings.Delay)
+                until not self.Data.Enabled
+            end
+		end
+	})
+
+    ProjectileAura.Toggle.Functions.Settings.MiniToggle({
+        Name = "Teleport",
+        Description = "Teleports the projectile",
+        Default = true,
+        Flag = "ProjectileAuraTP",
+        Callback = function(self, value)
+            ProjectileAura.Settings.TP = value
+        end
+    })
+
+    ProjectileAura.Toggle.Functions.Settings.Slider({
+        Name = "Range",
+        Description = "Range to detect the player",
+        Min = 1,
+        Max = 50,
+        Default = 30,
+        Flag = "ProjectileAuraRange",
+        Callback = function(self, value)
+            ProjectileAura.Settings.Range = value
+        end
+    })
+
+    ProjectileAura.Toggle.Functions.Settings.Slider({
+        Name = "Speed",
+        Description = "How fast to launch the projectile",
+        Min = 1,
+        Max = 100,
+        Default = 100,
+        Flag = "ProjectileAuraSpeed",
+        Callback = function(self, value)
+            ProjectileAura.Settings.Speed = value
+        end
+    })
+
+    ProjectileAura.Toggle.Functions.Settings.Slider({
+        Name = "Power",
+        Description = "Power to launch the projectile",
+        Min = 1,
+        Max = 100,
+        Default = 50,
+        Flag = "ProjectileAuraPower",
+        Callback = function(self, value)
+            ProjectileAura.Settings.Power = value
+        end
+    })
+
+    ProjectileAura.Toggle.Functions.Settings.Slider({
+        Name = "Delay",
+        Description = "Delay between each projectile",
+        Min = 0,
+        Max = 1,
+        Default = 0.1,
+        Flag = "ProjectileAuraDelay",
+        Callback = function(self, value)
+            ProjectileAura.Settings.Delay = value
+        end
+    })
+end)();
+
+(function()
     local VelocityData = {
         Settings = {Knockback = 0},
         Old = GameData.Modules.Knockback.applyKnockback
@@ -4653,12 +4810,11 @@ end)();
 (function()
     Tabs.World.Functions.NewModule({
         Name = "AntiAFK",
-        Description = "Blocks Roblox from kicking you while being AFK and fixes BedWars\"s queue",
+        Description = "Blocks Roblox from kicking you while being AFK",
         Icon = "rbxassetid://112131645518908",
         Flag = "AntiAFK",
         Callback = function(self, callback)
             if callback then
-                Rep.rbxts_include.node_modules["@rbxts"].net.out._NetManaged.AfkInfo:FireServer({afk = false})
                 LP.Idled:Connect(function()
                     if not self.Data.Enabled then return end
                     Virtual:CaptureController()
@@ -4763,14 +4919,14 @@ end)();
                             workspace.Gravity = 0
 
                             LP.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                            for i = 1, AntiVoid.Settings.Times do
+                            for _ = 1, AntiVoid.Settings.Times do
                                 LP.Character.HumanoidRootPart.CFrame += Vector3.new(0, AntiVoid.Settings.Power, 0)
                                 task.wait(AntiVoid.Settings.Times / 20)
                             end
 
                             workspace.Gravity = grav
                         else
-                            for i = 1, AntiVoid.Settings.Jumps do
+                            for _ = 1, AntiVoid.Settings.Jumps do
                                 LP.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
                                 task.wait(0.1)
                             end
@@ -4802,12 +4958,8 @@ end)();
             AntiVoid.Settings.Mode = value
             task.spawn(function()
                 repeat task.wait() until #AntiVoidLaunch == 3 and #AntiVoidTP == 2 and AntiVoidJump
-                for _, v in next, AntiVoidLaunch do
-                    v.Functions.SetVisiblity(value == "Launch")
-                end
-                for _, v in next, AntiVoidTP do
-                    v.Functions.SetVisiblity(value == "Teleport")
-                end
+                for _, v in next, AntiVoidLaunch do v.Functions.SetVisiblity(value == "Launch") end
+                for _, v in next, AntiVoidTP do v.Functions.SetVisiblity(value == "Teleport") end
                 AntiVoidJump.Functions.SetVisiblity(value == "Jump")
             end)
         end
@@ -4930,7 +5082,7 @@ end)();
             Blocks = 30,
             CPS = 30,
             Mode = "Simple",
-            BlocksEnabled = true
+            BlocksEnabled = false
         },
         Enabled = false,
         Running = false,
@@ -5062,4 +5214,4 @@ end)();
             AutoClicker.Settings.CPS = value
         end
     })
-end)()
+end)();
