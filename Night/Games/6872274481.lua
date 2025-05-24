@@ -120,7 +120,6 @@ local Plrs = Functions.cloneref(game:GetService("Players")) :: Players
 local HttpService = Functions.cloneref(game:GetService("HttpService")) :: HttpService
 local UIS = Functions.cloneref(game:GetService("UserInputService")) :: UserInputService
 local RS = Functions.cloneref(game:GetService("RunService")) :: RunService
-local Virtual = Functions.cloneref(game:GetService("VirtualUser")) :: VirtualUser
 local LP = Plrs.LocalPlayer
 local Cam = WS.CurrentCamera
 local PG = Functions.cloneref(LP:WaitForChild("PlayerGui")) :: PlayerGui
@@ -148,10 +147,9 @@ Functions.Notify = function(Description: string, Duration: number, Flag: string 
     end
 end
 
-
 local KnitPath = Rep.rbxts_include.node_modules["@easy-games"].knit
 local Knit = require(KnitPath.src).KnitClient
-repeat task.wait(2) until Knit and Cam:FindFirstChild("Viewmodel") and workspace:FindFirstChild("Map")
+repeat task.wait() until Knit and Cam:FindFirstChild("Viewmodel") and workspace:FindFirstChild("Map")
 
 local GameData = {
     Controllers = {
@@ -303,6 +301,10 @@ local GetSpeedModifier = function(val: number)
 	return speed
 end
 
+local GetMatchState = function()
+    return GameData.Modules.Store:getState().Game.matchState
+end
+
 local GetDistance = function(pos: Vector3, ignoreylevel: boolean)
     if Functions.IsAlive() then
         local LPos = LP.Character.HumanoidRootPart.Position :: Vector3
@@ -317,13 +319,13 @@ end
 
 local GetEntities = function()
     local Entities = {}
-    for i,v in CS:GetTagged("entity") do
+    for _, v in CS:GetTagged("entity") do
         Entities[v] = {
             PrimaryPart = v.PrimaryPart,
             Player = Plrs:GetPlayerFromCharacter(v),
             Health = v:GetAttribute("Health") or 0,
-            Humanoid = v.Humanoid
-        }
+            Humanoid = v:FindFirstChild("Humanoid")
+        }   
         if table.find(CS:GetTags(v), "Drone") then
             Entities[v].Drone = {Team = v:GetAttribute("Team"), Player = v:GetAttribute("PlayerUserId")}
         end
@@ -1145,6 +1147,8 @@ local KillAuraData = {
         Flag = "KillAura",
         Callback = function(self, callback)
             if callback then
+                repeat task.wait() until GetMatchState() ~= 0
+
                 table.insert(KillAuraData.Connections, UIS.InputBegan:Connect(function(a0: InputObject, a1: boolean)  
                     if a0.UserInputType == Enum.UserInputType.MouseButton1 or a0.UserInputType == Enum.UserInputType.Touch then
                         KillAuraData.Settings.MouseDown = true
@@ -3064,43 +3068,45 @@ end
         Flag = "AutoUpgrade",
         Callback = function(self, callback)
             if callback then
-                repeat
-                    local Shop = GetNearestShop("upgrade")
-                    if Shop.Shop and AutoUpgradeData.Settings.Range >= Shop.Distance then
-                        local TeamCrate = pcall(function() return GameData.Controllers.TeamCrate:getTeamCrate() end)
-                        if TeamCrate and TeamCrate:FindFirstChild("ChestFolderValue") then
-                            GameData.Controllers.Chest:openChest(TeamCrate.ChestFolderValue.Value)
-                        end
-
-                        local Diamonds = 0
-                        local CurrentCurrency = GetItemType("diamond", false, false)
-                        if CurrentCurrency and CurrentCurrency.Item then
-                            local CurrentAmount = CurrentCurrency.Item.amount
-                            if CurrentAmount then
-                                Diamonds = CurrentAmount
+                pcall(function()
+                    repeat
+                        local Shop = GetNearestShop("upgrade")
+                        if Shop.Shop and AutoUpgradeData.Settings.Range >= Shop.Distance then
+                            local TeamCrate = pcall(function() return GameData.Controllers.TeamCrate:getTeamCrate() end)
+                            if TeamCrate and TeamCrate:FindFirstChild("ChestFolderValue") then
+                                GameData.Controllers.Chest:openChest(TeamCrate.ChestFolderValue.Value)
                             end
-                        end
 
-                        if table.find(AutoUpgradeData.Settings.Upgrades, "Damage") then
-                            BuyNextTeamUpgrade(Diamonds, "DAMAGE")
-                        end
+                            local Diamonds = 0
+                            local CurrentCurrency = GetItemType("diamond", false, false)
+                            if CurrentCurrency and CurrentCurrency.Item then
+                                local CurrentAmount = CurrentCurrency.Item.amount
+                                if CurrentAmount then
+                                    Diamonds = CurrentAmount
+                                end
+                            end
 
-                        if table.find(AutoUpgradeData.Settings.Upgrades, "Armor") then
-                            BuyNextTeamUpgrade(Diamonds, "ARMOR")
-                        end
+                            if table.find(AutoUpgradeData.Settings.Upgrades, "Damage") then
+                                BuyNextTeamUpgrade(Diamonds, "DAMAGE")
+                            end
 
-                        if table.find(AutoUpgradeData.Settings.Upgrades, "TeamGen") then
-                            BuyNextTeamUpgrade(Diamonds, "TEAM_GENERATOR")
-                        end
+                            if table.find(AutoUpgradeData.Settings.Upgrades, "Armor") then
+                                BuyNextTeamUpgrade(Diamonds, "ARMOR")
+                            end
 
-                        if table.find(AutoUpgradeData.Settings.Upgrades, "DiamondGen") then
-                            BuyNextTeamUpgrade(Diamonds, "DIAMOND_GENERATOR")
-                        end
+                            if table.find(AutoUpgradeData.Settings.Upgrades, "TeamGen") then
+                                BuyNextTeamUpgrade(Diamonds, "TEAM_GENERATOR")
+                            end
 
-                        GameData.Modules.Remotes:GetNamespace("Inventory"):Get("SetObservedChest"):SendToServer(nil)
-                    end
-                    task.wait()
-                until not self.Data.Enabled
+                            if table.find(AutoUpgradeData.Settings.Upgrades, "DiamondGen") then
+                                BuyNextTeamUpgrade(Diamonds, "DIAMOND_GENERATOR")
+                            end
+
+                            GameData.Modules.Remotes:GetNamespace("Inventory"):Get("SetObservedChest"):SendToServer(nil)
+                        end
+                        task.wait()
+                    until not self.Data.Enabled
+                end)
             end
         end
     })
@@ -3686,6 +3692,8 @@ end
         Flag = "AntiHit",
         Callback = function(self, callback)
             if callback then
+                repeat task.wait() until GetMatchState() ~= 0
+
                 repeat
                     AntiHit.Clone = nil
                     AntiHit.Connect = nil
@@ -4819,7 +4827,18 @@ end)();
             end
         end
     })
-end)();
+end)()
+
+local GetYPos = function()
+    local pos = math.huge
+    for _, block in next, Blocks do
+        local ray = workspace:Raycast(block.Position + Vector3.new(0, 1000, 0), Vector3.new(0, -1000, 0), BlockRay)
+        if ray and ray.Position.Y < pos then
+            pos = ray.Position.Y - 7
+        end
+    end
+    return pos
+end
 
 (function()
     local AntiVoid = {
@@ -4841,17 +4860,6 @@ end)();
         Bounce = false,
         Position = 0
     }
-
-    local GetYPos = function()
-        local pos = math.huge
-        for _, block in next, Blocks do
-            local ray = workspace:Raycast(block.Position + Vector3.new(0, 1000, 0), Vector3.new(0, -1000, 0), BlockRay)
-            if ray and ray.Position.Y < pos then
-                pos = ray.Position.Y - 7
-            end
-        end
-        return pos
-    end
 
     AntiVoid.Toggle = Tabs.World.Functions.NewModule({
         Name = "AntiVoid",
@@ -5192,6 +5200,99 @@ end)();
         Flag = "AutoClickerHitCPS",
         Callback = function(self, value)
             AutoClicker.Settings.CPS = value
+        end
+    })
+end)();
+
+(function()
+    local AutoVoidDrop = {
+        Settings = {
+            Items = {"emerald", "diamond", "gold", "iron"},
+            Position = 70,
+            Delay = 0.1,
+            Owl = false
+        }
+    }
+
+    AutoVoidDrop.Toggle = Tabs.World.Functions.NewModule({
+        Name = "AutoVoidDrop",
+        Description = "Automatically drops items when falling into the void",
+        Icon = "rbxassetid://109744104816615",
+        Flag = "AutoVoidDrop",
+        Callback = function(self, callback)
+            if callback then
+                repeat task.wait() until GetMatchState() ~= 0
+
+                local VoidDrop = function()
+                    repeat
+                        if Functions.IsAlive() and (LP.Character:GetAttribute('InflatedBalloons') or 0) <= 0 and LP.Character.HumanoidRootPart.Position.Y < (GetYPos() - AutoVoidDrop.Settings.Position) then
+                            if (AutoVoidDrop.Settings.Owl and not LP.Character.HumanoidRootPart:FindFirstChild('OwlLiftForce')) or not AutoVoidDrop.Settings.Owl then
+                                for _, v in AutoVoidDrop.Settings.Items do
+                                    local Item = GetItemType(v, false, false)
+                                    if Item then
+                                        Rep.rbxts_include.node_modules["@rbxts"].net.out._NetManaged.DropItem:InvokeServer({
+                                            item = Item.Item.tool,
+                                            amount = Item.Item.amount
+                                        })
+                                    end
+                                end
+                            end
+                        end
+                        task.wait(AutoVoidDrop.Settings.Delay)
+                    until not self.Data.Enabled
+                end
+
+                LP.CharacterAdded:Connect(VoidDrop)
+                VoidDrop()
+            end
+        end
+    })
+
+    AutoVoidDrop.Toggle.Functions.Settings.TextBox({
+        Name = "Items",
+        Description = "Items to drop, in order (separated by commas and space)",
+        Default = "emerald, diamond, gold, iron",
+        Flag = "AutoVoidDropItems",
+        Callback = function(self, callback)
+            local items = {}
+            for item in string.gmatch(callback, "([^,]+)") do
+                table.insert(items, item:match("^%s*(.-)%s*$"))
+            end
+            AutoVoidDrop.Settings.Items = items
+        end
+    })
+
+    AutoVoidDrop.Toggle.Functions.Settings.Slider({
+        Name = "Position",
+        Description = "Position to drop the items at",
+        Min = 1,
+        Max = 70,
+        Default = 70,
+        Flag = "AutoVoidDropPosition",
+        Callback = function(self, value)
+            AutoVoidDrop.Settings.Position = value
+        end
+    })
+
+    AutoVoidDrop.Toggle.Functions.Settings.Slider({
+        Name = "Delay",
+        Description = "Delay to check position",
+        Min = 0,
+        Max = 1,
+        Default = 0.1,
+        Flag = "AutoVoidDropDelay",
+        Callback = function(self, value)
+            AutoVoidDrop.Settings.Delay = value
+        end
+    })
+
+    AutoVoidDrop.Toggle.Functions.Settings.MiniToggle({
+        Name = "Owl",
+        Description = "Doesn't drop items if you're being picked up by an owl",
+        Flag = "AutoVoidDropOwl",
+        Default = true,
+        Callback = function(self, value)
+            AutoVoidDrop.Settings.Owl = value
         end
     })
 end)();
