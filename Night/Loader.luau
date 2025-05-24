@@ -200,6 +200,10 @@ task.wait(0.15)
 
 if not isfile("Night/Version.txt") then
     writefile("Night/Version.txt", "Current version: 2.1.2")
+    Assets.Notifications.Send({
+        Description = "Night has been updated to V2.1.2",
+        Duration = 15
+    })
 end
 
 local text = readfile("Night/Version.txt")
