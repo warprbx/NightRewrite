@@ -81,7 +81,6 @@ Assets = getgenv().Night.Assets
 if not Assets or typeof(Assets) ~= "table" or (Assets and not Assets.Functions) then
     getgenv().Night = nil
     return warn("Failed to load Functions, Night uninjected")
-
 end
 
 local uis = Assets.Functions.cloneref(game:GetService("UserInputService")) :: UserInputService
@@ -189,22 +188,34 @@ Assets.Main.ToggleVisibility(true)
 getgenv().Night.Main = Assets.Main
 getgenv().Night.LoadTime = os.clock() - getgenv().Night.Load
 Assets.Notifications.Send({
-    Description = "Loaded in " .. getgenv().Night.LoadTime .. " seconds",
+    Description = "Loaded in " .. string.format("%.1f", getgenv().Night.LoadTime) .. " seconds",
     Duration = 5
 })
-if getgenv().Night.Mobile or getgenv().Night.Config.UI.ToggleKeyCode and getgenv().Night.Config.UI.ToggleKeyCode ~= "" and getgenv().Night.Config.UI.ToggleKeyCode ~= "Unknown" then
+--[[if getgenv().Night.Mobile or getgenv().Night.Config.UI.ToggleKeyCode and getgenv().Night.Config.UI.ToggleKeyCode ~= "" and getgenv().Night.Config.UI.ToggleKeyCode ~= "Unknown" then
     task.wait(0.5)
     Assets.Notifications.Send({
         Description = "Current Keybind is: " .. getgenv().Night.Config.UI.ToggleKeyCode,
         Duration = 5
     })
-end
+end]]
 task.wait(0.15)
-Assets.Notifications.Send({
-    Description = "Check out premium tab! Some modules were added. Join https://discord.gg/PYVuXbZ7bV for support",
-    Duration = math.huge,
-    Flag = "discordnoti"
-})
-Night.Loaded = true
 
+if not isfile("Night/Version.txt") then
+    writefile("Night/Version.txt", "Current version: 2.1.2")
+    Assets.Notifications.Send({
+        Description = "Night has been updated to V2.1.2",
+        Duration = 15
+    })
+end
+
+local text = readfile("Night/Version.txt")
+if text ~= "Current version: 2.1.2" then
+    Assets.Notifications.Send({
+        Description = "Night has been updated to V2.1.2",
+        Duration = 15
+    })
+    writefile("Night/Version.txt", "Current version: 2.1.2")
+end
+
+Night.Loaded = true
 return Assets.Main
