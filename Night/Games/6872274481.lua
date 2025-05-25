@@ -149,7 +149,7 @@ end
 
 local KnitPath = Rep.rbxts_include.node_modules["@easy-games"].knit
 local Knit = require(KnitPath.src).KnitClient
-repeat task.wait() until Knit and Cam:FindFirstChild("Viewmodel") and workspace:FindFirstChild("Map")
+repeat task.wait() until Knit and Cam:FindFirstChild("Viewmodel") and WS:FindFirstChild("Map")
 
 local GameData = {
     Controllers = {
@@ -282,7 +282,7 @@ local GetSpeedModifier = function(val: number)
             add = true
 		end
 
-        local name = workspace[LP.Name]
+        local name = WS[LP.Name]
         if name and name:FindFirstChild("speed_boots_left") and name:FindFirstChild("speed_boots_right") then 
             speed += add and 15 or val
             add = true
@@ -725,7 +725,7 @@ local FlyData = {
         DeflateBalloon = false,
         Vertical = false,
         VerticalValue = 0,
-        VericalAmount = 30,
+        VericalAmount = 50,
         LastOnGround = os.clock(),
         FlyTimer = false,
         UIColor = {R = 210, G = 210, B = 210}
@@ -795,17 +795,16 @@ local FlyData = {
                             if not balloons or 1 > balloons then
                                 if os.clock() - FlyData.Settings.LastOnGround >= 2 then
                                     if FlyData.Settings.TPDown then
-                                        local RayPrams = RaycastParams.new()
-                                        RayPrams.FilterType = Enum.RaycastFilterType.Include
-                                        RayPrams.FilterDescendantsInstances = CS:GetTagged("block")
-                                        local RAY = WS:Raycast(LP.Character.HumanoidRootPart.Position, -Vector3.new(0,10000,0), RayPrams)
-                                        local Pos = LP.Character.HumanoidRootPart.Position :: Vector3
+                                        local FlyRay = RaycastParams.new()
+                                        FlyRay.FilterType = Enum.RaycastFilterType.Include
+                                        FlyRay.FilterDescendantsInstances = CS:GetTagged("block")
+                                        local RAY = WS:Raycast(LP.Character.HumanoidRootPart.Position, -Vector3.new(0, 1000, 0), FlyRay)
+                                        local OldPos = LP.Character.HumanoidRootPart.Position.Y :: Vector3
                                         if RAY and RAY.Instance then
-                                            LP.Character.HumanoidRootPart.CFrame = CFrame.new(Pos.X, RAY.Position.Y, Pos.Z)
+                                            LP.Character.HumanoidRootPart.CFrame = CFrame.lookAlong(Vector3.new(LP.Character.HumanoidRootPart.Position.X, RAY.Position.Y + LP.Character.Humanoid.HipHeight, LP.Character.HumanoidRootPart.Position.Z), LP.Character.HumanoidRootPart.CFrame.LookVector)
                                             FlyData.Settings.LastOnGround = os.clock()
                                             task.wait(0.05)
-                                            local newpos = LP.Character.HumanoidRootPart.Position :: Vector3
-                                            LP.Character.HumanoidRootPart.CFrame = CFrame.new(newpos.X, Pos.Y, newpos.Z)
+                                            LP.Character.HumanoidRootPart.CFrame = CFrame.lookAlong(Vector3.new(LP.Character.HumanoidRootPart.Position.X, OldPos, LP.Character.HumanoidRootPart.Position.Z), LP.Character.HumanoidRootPart.CFrame.LookVector)
                                         end
                                     end
                                 end
@@ -903,8 +902,8 @@ local FlyData = {
         Name = "Vertical Speed",
         Description = "Speed to move up and down at",
         Min = 10,
-        Max = 50,
-        Default = 30,
+        Max = 150,
+        Default = 50,
         Flag = "FlyVerticalSpeed",
         Hide = true,
         Callback = function(self, callback)
@@ -1654,22 +1653,31 @@ local KillAuraData = {
     }))
 end)()
 
-local groundRay = RaycastParams.new()
-groundRay.FilterType = Enum.RaycastFilterType.Include
-groundRay.FilterDescendantsInstances = {workspace:WaitForChild("Map")}
+local GroundRay = RaycastParams.new()
+GroundRay.FilterType = Enum.RaycastFilterType.Include
+GroundRay.FilterDescendantsInstances = {WS:WaitForChild("Map")}
 
 (function()
     local NoFallData = {
-        settings = {
-            dangerous = 80,
-            velo = 70,
-            speed = 90,
-            safe = false,
-            mode = "Smooth",
-            nohit = false
-        }
+        Settings = {
+            Limit = 80,
+            Boost = 85,
+            Dangerous = 80,
+            Velo = 70,
+            Speed = 90,
+            Safe = false,
+            Mode = "Physics"
+        },
+        Connect = nil
     }
-    
+
+    local Power = 0
+    local Physics = function(DT)
+        LP.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(LP.Character.HumanoidRootPart.AssemblyLinearVelocity.X, -NoFallData.Settings.Boost, LP.Character.HumanoidRootPart.AssemblyLinearVelocity.Z)
+        LP.Character.HumanoidRootPart.CFrame += Vector3.new(0, DT * Power, 0)
+        Power -= DT * WS.Gravity
+    end
+
     NoFallData.Toggle = Tabs.Player.Functions.NewModule({
         Name = "NoFall",
         Description = "Prevents taking fall damage",
@@ -1677,60 +1685,113 @@ groundRay.FilterDescendantsInstances = {workspace:WaitForChild("Map")}
         Flag = "NoFall",
         Callback = function(self, callback)
             if callback then
-                pcall(function()
-                    repeat
-                        if Functions.IsAlive() then
-                            if NoFallData.settings.mode == "Smooth" then
-                                local ground = WS:Raycast(LP.Character.HumanoidRootPart.Position, Vector3.new(0, -1000, 0), groundRay)
-                                if LP.Character.Humanoid:GetState() == Enum.HumanoidStateType.Freefall then
-                                    task.spawn(function()
-                                        if ground and LP.Character.HumanoidRootPart.Position.Y - ground.Position.Y >= NoFallData.settings.dangerous and NoFallData.settings.safe then
-                                            LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, -NoFallData.settings.speed, 0)
-                                        end
-                                    end)
-                                    LP.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Landed)
-                                end
-                            else
-                                if LP.Character.HumanoidRootPart.Velocity.Y <= -NoFallData.settings.velo then
-                                    LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, -NoFallData.settings.speed, 0)
-                                end
-                            end
+                NoFallData.Connect = RS.PreSimulation:Connect(function(DT)
+                    if not self.Data.Enabled or not Functions.IsAlive() then return end
+
+                    if NoFallData.Settings.Mode == "Physics" then
+                        if LP.Character.HumanoidRootPart.AssemblyLinearVelocity.Y >= -NoFallData.Settings.Limit then
+                            Power = 0
+                            return
                         end
-                        task.wait()
-                    until not self.Data.Enabled
+
+                        local FallRay = RaycastParams.new()
+                        FallRay.FilterDescendantsInstances = {LP.Character, Cam}
+                        FallRay.CollisionGroup = LP.Character.HumanoidRootPart.CollisionGroup
+                        FallRay.FilterType = Enum.RaycastFilterType.Exclude
+
+                        local _, Size = LP.Character:GetBoundingBox()
+                        local Direction = Vector3.new(0, -(Size.Y / 2), 0)
+
+                        local Raycast = WS:Raycast(LP.Character.HumanoidRootPart.Position, Direction, FallRay)
+                        if not Raycast then
+                            Physics(DT)
+                        else
+                            Power = 0
+                        end
+                    elseif NoFallData.Settings.Mode == "Smooth" then
+                        local Ground = WS:Raycast(LP.Character.HumanoidRootPart.Position, Vector3.new(0, -1000, 0), GroundRay)
+                        if LP.Character.Humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+                            task.spawn(function()
+                                if Ground and LP.Character.HumanoidRootPart.Position.Y - Ground.Position.Y >= NoFallData.Settings.Dangerous and NoFallData.Settings.Safe then
+                                    LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, -NoFallData.Settings.Speed, 0)
+                                end
+                            end)
+                            LP.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Landed)
+                        end
+                    else
+                        if LP.Character.HumanoidRootPart.Velocity.Y <= -NoFallData.Settings.Velo then
+                            LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, -NoFallData.Settings.Speed, 0)
+                        end
+                    end
                 end)
+            else
+                if NoFallData.Connect then
+                    NoFallData.Connect:Disconnect()
+                    NoFallData.Connect = nil
+                end
             end
         end
     })
-    local nofallsafe, NoFallVelocity, nofalldangerous, NoFallSpeed
+
+    local NoFallLimit, NoFallBoost, NoFallSafe, NoFallDangerous, NoFallVelocity, NoFallSpeed
     NoFallData.Toggle.Functions.Settings.Dropdown({
         Name = "Mode",
         Description = "Mode to prevent fall damage",
-        Default = "Smooth",
-        Options = {"Smooth", "Slow"},
+        Default = "Physics",
+        Options = {"Physics", "Smooth", "Slow"},
         Flag = "NoFallMode",
         Callback = function(self, value)
-            NoFallData.settings.mode = value
+            NoFallData.Settings.Mode = value
             task.spawn(function()
-                repeat task.wait() until NoFallSpeed
-                nofallsafe.Functions.SetVisiblity(value == "Smooth")
-                nofalldangerous.Functions.SetVisiblity(value == "Smooth")
+                repeat task.wait() until NoFallLimit and NoFallBoost and NoFallSafe and NoFallDangerous and NoFallVelocity and NoFallSpeed
+                NoFallLimit.Functions.SetVisiblity(value == "Physics")
+                NoFallBoost.Functions.SetVisiblity(value == "Physics")
+                NoFallSafe.Functions.SetVisiblity(value == "Smooth")
+                NoFallDangerous.Functions.SetVisiblity(value == "Smooth")
                 NoFallVelocity.Functions.SetVisiblity(value == "Slow")
                 NoFallSpeed.Functions.SetVisiblity(value == "Slow")
             end)
         end
     })
-    nofallsafe = NoFallData.Toggle.Functions.Settings.MiniToggle({
+
+    NoFallLimit = NoFallData.Toggle.Functions.Settings.Slider({
+        Name = "Limit",
+        Description = "Limit to apply the no fall",
+        Min = 70,
+        Max = 90,
+        Default = 80,
+        Hide = true,
+        Flag = "NoFallLimit",
+        Callback = function(self, value)
+            NoFallData.Settings.Limit = value
+        end
+    })
+
+    NoFallBoost = NoFallData.Toggle.Functions.Settings.Slider({
+        Name = "Boost",
+        Description = "Power to boost the physics",
+        Min = 80,
+        Max = 100,
+        Default = 85,
+        Hide = true,
+        Flag = "NoFallBoost",
+        Callback = function(self, value)
+            NoFallData.Settings.Boost = value
+        end
+    })
+
+    NoFallSafe = NoFallData.Toggle.Functions.Settings.MiniToggle({
         Name = "Safe Mode",
         Description = "Lands a bit slower when jumping from a very high point",
         Flag = "NoFallSafe",
         Default = true,
         Hide = true,
         Callback = function(self, value)
-            NoFallData.settings.safe = value
+            NoFallData.Settings.Safe = value
         end
     })
-    nofalldangerous = NoFallData.Toggle.Functions.Settings.Slider({
+
+    NoFallDangerous = NoFallData.Toggle.Functions.Settings.Slider({
         Name = "Dangerous Position",
         Description = "Height to check for the dangerous position",
         Min = 50,
@@ -1739,9 +1800,10 @@ groundRay.FilterDescendantsInstances = {workspace:WaitForChild("Map")}
         Hide = true,
         Flag = "NoFallDangerous",
         Callback = function(self, value)
-            NoFallData.settings.dangerous = value
+            NoFallData.Settings.Dangerous = value
         end
     })
+
     NoFallVelocity = NoFallData.Toggle.Functions.Settings.Slider({
         Name = "Velocity Check",
         Description = "Value to check the velocity when you're falling",
@@ -1751,9 +1813,10 @@ groundRay.FilterDescendantsInstances = {workspace:WaitForChild("Map")}
         Hide = true,
         Flag = "NoFallVelocity",
         Callback = function(self, value)
-            NoFallData.settings.velo = value
+            NoFallData.Settings.Velo = value
         end
     })
+
     NoFallSpeed = NoFallData.Toggle.Functions.Settings.Slider({
         Name = "Fall Speed",
         Description = "Speed to fall down",
@@ -1763,7 +1826,7 @@ groundRay.FilterDescendantsInstances = {workspace:WaitForChild("Map")}
         Flag = "NoFallSpeed",
         Hide = true,
         Callback = function(self, value)
-            NoFallData.settings.speed = value
+            NoFallData.Settings.Speed = value
         end
     })
 end)();
@@ -3150,7 +3213,7 @@ local FireProjectile = function(Tool: {tool: any | Instance, itemType: string}, 
                 shotId = HttpService:GenerateGUID(),
                 drawDurationSec = 1,
             },
-            workspace:GetServerTimeNow()
+            WS:GetServerTimeNow()
         )
     end
     return
@@ -3200,7 +3263,7 @@ end
                 RayParams.FilterType = Enum.RaycastFilterType.Include
                 RayParams.FilterDescendantsInstances = CS:GetTagged("block")
 
-                local Ground = workspace:Raycast(LP.Character.HumanoidRootPart.Position, Vector3.new(0, -1000, 0), RayParams)
+                local Ground = WS:Raycast(LP.Character.HumanoidRootPart.Position, Vector3.new(0, -1000, 0), RayParams)
                 if not Ground or (Ground and LP:DistanceFromCharacter(Ground.Position) > 5) then
                     task.wait(0.3)
                     Functions.Notify("You're not on ground, disabled LongJump", 2.5)
@@ -3250,7 +3313,7 @@ end
                     end
 
                     if LongJumpData.Settings.Cam then
-                        LookVector = workspace.CurrentCamera.CFrame.LookVector
+                        LookVector = Cam.CFrame.LookVector
                     end
 
                     local MoveDirection = LongJumpData.Settings.NoStrafe and LookVector or LP.Character.PrimaryPart.CFrame.LookVector
@@ -3268,7 +3331,7 @@ end
                                     LP.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(LP.Character.HumanoidRootPart.AssemblyLinearVelocity.X, LongJumpData.Settings.Height + 5, LP.Character.HumanoidRootPart.AssemblyLinearVelocity.Z)
                                     Boosted = true
                                 else
-                                    LP.Character.HumanoidRootPart.AssemblyLinearVelocity += Vector3.new(0, DT * (workspace.Gravity - (LongJumpData.Settings.Height + 14)), 0)
+                                    LP.Character.HumanoidRootPart.AssemblyLinearVelocity += Vector3.new(0, DT * (WS.Gravity - (LongJumpData.Settings.Height + 14)), 0)
                                 end
                             else
                                 LP.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(LP.Character.HumanoidRootPart.AssemblyLinearVelocity.X, LongJumpData.Settings.Height + 5, LP.Character.HumanoidRootPart.AssemblyLinearVelocity.Z)
@@ -3278,7 +3341,7 @@ end
                         end
                     end
 
-                    local WallHit = workspace:Raycast(LP.Character.PrimaryPart.Position, MoveDirection * (Speed * DT + 1), RayParams)
+                    local WallHit = WS:Raycast(LP.Character.PrimaryPart.Position, MoveDirection * (Speed * DT + 1), RayParams)
                     if LongJumpData.Settings.WallCheck then
                         if not WallHit then
                             LJVelocity()
@@ -3704,7 +3767,7 @@ end
 
                         LP.Character.Archivable = true
                         AntiHit.Clone = LP.Character:Clone()
-                        AntiHit.Clone.Parent = workspace
+                        AntiHit.Clone.Parent = WS
                         Cam.CameraSubject = AntiHit.Clone.Humanoid
                 
                         for _, v in next, AntiHit.Clone:GetChildren() do
@@ -3937,19 +4000,19 @@ end
 
 CS:GetInstanceAddedSignal("block"):Connect(function(v) StoreBlock(v, "add") end)
 CS:GetInstanceRemovedSignal("block"):Connect(function(v) StoreBlock(v, "remove") end)
-PhaseRay.FilterDescendantsInstances = {Blocks, workspace:FindFirstChild("SpectatorPlatform"), CS:GetTagged("spawn-cage")}
+PhaseRay.FilterDescendantsInstances = {Blocks, WS:FindFirstChild("SpectatorPlatform"), CS:GetTagged("spawn-cage")}
 
 local PhaseOver = OverlapParams.new()
 PhaseOver.RespectCanCollide = true
 
 local GetPoint = function(point)
     PhaseOver.AddToFilter(PhaseOver, {LP.Character, Cam})
-    local parts = workspace:GetPartBoundsInBox(CFrame.new(point), Vector3.new(1, 2, 1), PhaseOver)
+    local parts = WS:GetPartBoundsInBox(CFrame.new(point), Vector3.new(1, 2, 1), PhaseOver)
     return #parts == 0
 end
 
 local GetPhaseRay = function()
-    return workspace:Raycast(LP.Character.Head.Position, LP.Character.Humanoid.MoveDirection * 12e-1, PhaseRay)
+    return WS:Raycast(LP.Character.Head.Position, LP.Character.Humanoid.MoveDirection * 12e-1, PhaseRay)
 end
 
 local GetPhaseDir = function(ray)
@@ -4066,7 +4129,7 @@ end
             if callback then
                 SpiderData.Connect = RS.PreSimulation:Connect(function(delta)
                     if Functions.IsAlive() then
-                        local ray = workspace:Raycast(
+                        local ray = WS:Raycast(
                             LP.Character.HumanoidRootPart.Position - Vector3.new(0, LP.Character.Humanoid.HipHeight - 0.5, 0),
                             LP.Character.Humanoid.MoveDirection * (SpiderData.Settings.Dist + 0.5),
                             SpiderRay
@@ -4401,7 +4464,7 @@ local Aim = function(start, speed, gravity, pos, velo, prediction, height, param
         for _ = 1, 100 do
             velY = velY - (0.5 * prediction) * estTime
             local velocity = velo * 0.016
-            local ray = workspace.Raycast(workspace, Vector3.new(pos.X, pos.Y, pos.Z), Vector3.new(velocity.X, (velY * estTime) - height, velocity.Z), params)
+            local ray = WS.Raycast(WS, Vector3.new(pos.X, pos.Y, pos.Z), Vector3.new(velocity.X, (velY * estTime) - height, velocity.Z), params)
             if ray then
                 local newTarget = ray.Position + Vector3.new(0, height, 0)
                 estTime = estTime - math.sqrt(((pos - newTarget).Magnitude * 2) / prediction)
@@ -4502,9 +4565,9 @@ end
 
                     for _, player in next, Plrs:GetPlayers() do
                         if Functions.IsAlive(player) and Functions.IsAlive() and player.Team ~= LP.Team then
-                            local screenPos, onScreen = workspace.CurrentCamera:WorldToScreenPoint(player.Character.HumanoidRootPart.Position)
+                            local screenPos, onScreen = Cam:WorldToScreenPoint(player.Character.HumanoidRootPart.Position)
                             if onScreen and (ProjectileAimbot.Circle.Position - Vector2.new(screenPos.X, screenPos.Y)).Magnitude <= (ProjectileAimbot.Settings.Size + 25) then
-                                local calc = Aim(CFrame.new(launch + data.fromPositionOffset, player.Character.HumanoidRootPart.Position).Position, data:getProjectileMeta().launchVelocity, data:getProjectileMeta().gravitationalAcceleration * data.gravityMultiplier, player.Character.HumanoidRootPart.Position, player.Character.HumanoidRootPart.Velocity, workspace.Gravity * (player.Character:GetAttribute("InflatedBalloons") and 0.3 or 1), player.Character.Humanoid.HipHeight, groundRay)
+                                local calc = Aim(CFrame.new(launch + data.fromPositionOffset, player.Character.HumanoidRootPart.Position).Position, data:getProjectileMeta().launchVelocity, data:getProjectileMeta().gravitationalAcceleration * data.gravityMultiplier, player.Character.HumanoidRootPart.Position, player.Character.HumanoidRootPart.Velocity, WS.Gravity * (player.Character:GetAttribute("InflatedBalloons") and 0.3 or 1), player.Character.Humanoid.HipHeight, GroundRay)
 
                                 if (not ProjectileAimbot.Settings.Other and not data.projectile:find("arrow")) or not launch or not calc then
                                     return ProjectileAimbot.Old(proj, data, line, start, pos)
@@ -4681,7 +4744,7 @@ end)();
                             local Obj = Tools[i]
                             if (DelayMap[Obj.Item.itemType] or 0) < tick() then
                                 local ProjData = GameData.Modules.ProjMeta[Obj.Proj]
-                                local AimPos = Aim(Pos, ProjData.launchVelocity, ProjData.gravitationalAcceleration or 196.2, Target.EntityData.PrimaryPart.Position, Target.EntityData.PrimaryPart.Velocity, workspace.Gravity, Target.EntityData.Humanoid.HipHeight, groundRay)
+                                local AimPos = Aim(Pos, ProjData.launchVelocity, ProjData.gravitationalAcceleration or 196.2, Target.EntityData.PrimaryPart.Position, Target.EntityData.PrimaryPart.Velocity, WS.Gravity, Target.EntityData.Humanoid.HipHeight, GroundRay)
                                 if AimPos then
                                     GameData.Remotes.Set:InvokeServer({hand = Obj.Item.tool})
 
@@ -4695,7 +4758,7 @@ end)();
                                             (CFrame.new(Pos, AimPos)).LookVector * ProjData.launchVelocity,
                                             HttpService:GenerateGUID(true),
                                             {drawDurationSec = ProjectileAura.Settings.Speed / 100, shotId = HttpService:GenerateGUID(false)},
-                                            workspace:GetServerTimeNow() - (math.pow(10, -2) * ((ProjectileAura.Settings.Power - 5) / 2))
+                                            WS:GetServerTimeNow() - (math.pow(10, -2) * ((ProjectileAura.Settings.Power - 5) / 2))
                                         }
 
                                         if not ProjectileAura.Settings.TP then
@@ -4832,7 +4895,7 @@ end)()
 local GetYPos = function()
     local pos = math.huge
     for _, block in next, Blocks do
-        local ray = workspace:Raycast(block.Position + Vector3.new(0, 1000, 0), Vector3.new(0, -1000, 0), BlockRay)
+        local ray = WS:Raycast(block.Position + Vector3.new(0, 1000, 0), Vector3.new(0, -1000, 0), BlockRay)
         if ray and ray.Position.Y < pos then
             pos = ray.Position.Y - 7
         end
@@ -4868,7 +4931,7 @@ end
         Flag = "AntiVoid",
         Callback = function(self, callback)
             if callback then
-                AntiVoid.Part = Instance.new("Part", workspace)
+                AntiVoid.Part = Instance.new("Part", WS)
                 AntiVoid.Part.Size = Vector3.new(2000, 0.5, 2000)
                 AntiVoid.Part.Color = Color3.fromRGB(AntiVoid.Settings.Color.R, AntiVoid.Settings.Color.G, AntiVoid.Settings.Color.B)
                 AntiVoid.Part.Material = Enum.Material[AntiVoid.Settings.Material]
@@ -4903,8 +4966,8 @@ end
                                 LP.Character.HumanoidRootPart.Velocity = Vector3.new(0, i * (AntiVoid.Position - LP.Character.HumanoidRootPart.Position.Y + AntiVoid.Settings.Add), 0)
                             end
                         elseif AntiVoid.Settings.Mode == "Teleport" then
-                            local grav = workspace.Gravity
-                            workspace.Gravity = 0
+                            local Grav = WS.Gravity
+                            WS.Gravity = 0
 
                             LP.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
                             for _ = 1, AntiVoid.Settings.Times do
@@ -4912,7 +4975,7 @@ end
                                 task.wait(AntiVoid.Settings.Times / 20)
                             end
 
-                            workspace.Gravity = grav
+                            WS.Gravity = Grav
                         else
                             for _ = 1, AntiVoid.Settings.Jumps do
                                 LP.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
@@ -5293,6 +5356,73 @@ end)();
         Default = true,
         Callback = function(self, value)
             AutoVoidDrop.Settings.Owl = value
+        end
+    })
+end)();
+
+(function()
+    local FastBreak = {Settings = {Speed = 0.24}}
+
+    FastBreak.Toggle = Tabs.World.Functions.NewModule({
+        Name = "FastBreak",
+        Description = "Modifies the break cooldown",
+        Icon = "rbxassetid://126920895734081",
+        Flag = "FastBreak",
+        Callback = function(self, callback)
+            if callback then
+                repeat
+                    GameData.Controllers.BlockBreaker.cooldown = FastBreak.Settings.Speed
+					task.wait()
+				until not self.Data.Enabled
+			else
+				GameData.Controllers.BlockBreaker.cooldown = 0.3
+            end
+        end
+    })
+    
+    FastBreak.Toggle.Functions.Settings.Slider({
+        Name = "Speed",
+        Description = "How fast to break",
+        Flag = "FastBreakSpeed",
+        Min = 0,
+        Max = 0.3,
+        Default = 0.24,
+        Decimals = 2,
+        Callback = function(self, callback)
+            FastBreak.Settings.Speed = callback
+        end
+    })
+end)();
+
+(function()
+    local FarBreak = {Settings = {Range = 20}}
+
+    FarBreak.Toggle = Tabs.World.Functions.NewModule({
+        Name = "FarBreak",
+        Description = "Modifies the break range",
+        Icon = "rbxassetid://112327880375749",
+        Flag = "FarBreak",
+        Callback = function(self, callback)
+            if callback then
+                repeat
+                    GameData.Controllers.BlockBreaker.range = FarBreak.Settings.Range
+					task.wait()
+				until not self.Data.Enabled
+			else
+				GameData.Controllers.BlockBreaker.range = 18
+            end
+        end
+    })
+    
+    FarBreak.Toggle.Functions.Settings.Slider({
+        Name = "Range",
+        Description = "How far to break",
+        Flag = "FarBreakRange",
+        Min = 0,
+        Max = 30,
+        Default = 30,
+        Callback = function(self, callback)
+            FarBreak.Settings.Range = callback
         end
     })
 end)();
