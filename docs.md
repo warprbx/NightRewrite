@@ -2,7 +2,7 @@
 </p>
 
 # Documentations on how to make your own Night custom
-# If you still don't understand, you can check Night's games SRC or DM a dev or ask in the discord
+# If you still don't understand, you can check Night's games SRC, DM a dev or ask in the Discord.
 
 #  How to make your own game support using Night
 > Execute Night, this will make you a night folder in your workspace, goto the folder and make a "Games" folder
