@@ -12,31 +12,23 @@ local Assets = {
 }
 
 local Night = getgenv().Night
+Assets.Functions.cloneref = cloneref or function(ref: Instance) return ref end
 
-local plrs
-local ts
-local uis
-local httpservice
-local ws
-local TextService
-local currentCamera
+local PlayersSV = Assets.Functions.cloneref(game:GetService("Players")) :: Players
+local HttpService = Assets.Functions.cloneref(game:GetService("HttpService")) :: HttpService
+local TweenService = Assets.Functions.cloneref(game:GetService("TweenService")) :: TweenService
+local UserInputService = Assets.Functions.cloneref(game:GetService("UserInputService")) :: UserInputService
+local Workspace = Assets.Functions.cloneref(game:GetService("Workspace")) :: Workspace
+local TextService = Assets.Functions.cloneref(game:GetService("TextService")) :: TextService
+
+local UserCamera = Workspace.CurrentCamera :: Camera
+local LocalPlayer = PlayersSV.LocalPlayer :: Player
+
 do
-
     Assets.Functions.clonefunction = clonefunction or function(func: any) return func end
-    Assets.Functions.cloneref = cloneref or function(ref: Instance) return ref end
 
-    httpservice = Assets.Functions.cloneref(game:GetService("HttpService")) :: HttpService
-    plrs = Assets.Functions.cloneref(game:GetService("Players")) :: Players
-    ts = Assets.Functions.cloneref(game:GetService("TweenService")) :: TweenService
-    uis = Assets.Functions.cloneref(game:GetService("UserInputService")) :: UserInputService
-    ws = Assets.Functions.cloneref(game:GetService("Workspace")) :: Workspace
-    TextService = Assets.Functions.cloneref(game:GetService("TextService")) :: TextService
-    currentCamera = ws.CurrentCamera :: Camera
-
-    local lp = plrs.LocalPlayer :: Player
-
-    Assets.Functions.gethui = gethui or function() return plrs.LocalPlayer:FindFirstChildWhichIsA("PlayerGui") end
-    Assets.Functions.GenerateString = function(chars)
+    Assets.Functions.gethui = gethui or function() return LocalPlayer:FindFirstChildWhichIsA("PlayerGui") end
+    Assets.Functions.GenerateString = function(chars : number) : string
         local str = ""
         for i = 0, chars do
             str = str..string.char(math.random(33,126))
@@ -46,7 +38,7 @@ do
     Assets.Functions.GetGameInfo = function()
         local gameinfo = game:HttpGet("https://games.roblox.com/v1/games?universeIds="..tostring(game.GameId))
         if gameinfo then
-            local dencgameinfo = httpservice:JSONDecode(gameinfo)
+            local dencgameinfo = HttpService:JSONDecode(gameinfo)
             if dencgameinfo and dencgameinfo.data and dencgameinfo.data[1] then
                 return dencgameinfo.data[1]                
             else
@@ -56,7 +48,7 @@ do
             return "no game info returned"
         end
     end
-    Assets.Functions.LoadFile = function(file, githublink)
+    Assets.Functions.LoadFile = function(file : string, githublink : string)
         if Night.Dev and isfile(file) then
             return loadstring(readfile(file))()
         else
@@ -73,7 +65,7 @@ do
         return "error"
     end
     Assets.Functions.IsAlive = function(plr: Player)
-        plr = plr or plrs.LocalPlayer
+        plr = plr or LocalPlayer
         if plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
             local hum = plr.Character:FindFirstChildWhichIsA("Humanoid")
             if hum and hum.Health > 0.1 then
@@ -106,9 +98,9 @@ do
         return modules
     end
     Assets.Functions.GetNearestPlr = function(tplr, teamcheck)
-        tplr = tplr or lp
+        tplr = tplr or LocalPlayer
         local lastpos, plr = math.huge, nil
-        for i,v in plrs:GetPlayers() do
+        for i,v in PlayersSV:GetPlayers() do
             if teamcheck and v.Team ~= tplr.Team or not teamcheck then
                 if v and v ~= tplr and Assets.Functions.IsAlive(v) and Assets.Functions.IsAlive(tplr) then
                     local dist = (tplr.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
@@ -131,9 +123,9 @@ do
 
         local RData = {Player = nil, Distance = math.huge, PlayerDist = math.huge}
         local Players = {}
-        for i,v in plrs:GetPlayers() do
+        for i,v in PlayersSV:GetPlayers() do
             if Assets.Functions.IsAlive(v) then
-                if Data.Team and v.Team ~= lp.Team or not Data.Team then
+                if Data.Team and v.Team ~= LocalPlayer.Team or not Data.Team then
                     table.insert(Players, v.Character)
                 end
             end
@@ -147,15 +139,15 @@ do
             if not table.find(Data.Exclude, v) then
                 local Part = v:FindFirstChild("HumanoidRootPart") or v.PrimaryPart
                 if Part then
-                    local screenpos, onscreen = ws.CurrentCamera:WorldToScreenPoint(Part.Position)
+                    local screenpos, onscreen = UserCamera:WorldToScreenPoint(Part.Position)
                     if screenpos and onscreen then
-                        local mouse = lp:GetMouse()
+                        local mouse = LocalPlayer:GetMouse()
                         local mousepos = mouse.Hit.Position
                         local mag = (mousepos - Part.Position).Magnitude
                         local plrdist = (Part.Position - Part.Position).Magnitude
                         if Data.Limit >= mag and RData.Distance >= mag and (RData.Distance == mag and RData.PlayerDist >= plrdist or RData.Distance ~= mag) then
                             RData = {
-                                Player = plrs:GetPlayerFromCharacter(v) :: Player,
+                                Player = PlayersSV:GetPlayerFromCharacter(v) :: Player,
                                 Character = v,
                                 Distance = mag :: number,
                                 PlayerDist = plrdist :: number
@@ -171,14 +163,13 @@ end
 
 do
     Assets.Config.Save = function(File, data)
-        local encdata = httpservice:JSONEncode(data)
-        writefile("Night/Config/"..File..".json", encdata)
+        writefile("Night/Config/"..File..".json", HttpService:JSONEncode(data))
     end
     
     Assets.Config.Load = function(File, set)
         if isfile("Night/Config/"..File..".json") then
             local data = readfile("Night/Config/"..File..".json")
-            local data2 = httpservice:JSONDecode(data)
+            local data2 = HttpService:JSONDecode(data)
             if set then
                 Night.Config[set] = data2
                 if set == "Game" then
@@ -292,8 +283,7 @@ do
             table.insert(family.faces, rbx_face)
         end
 
-        local data = httpservice:JSONEncode(family)
-        writefile("Night/Assets/Fonts/"..name..".json", data)
+        writefile("Night/Assets/Fonts/"..name..".json", HttpService:JSONEncode(family))
 
         local id = getcustomasset("Night/Assets/Fonts/"..name..".json")
         family_cache[name] = id
@@ -324,7 +314,7 @@ do
         local flag = NotificationData.Flag or NotificationData.Description
         for i, v in Night.Notifications.Active do
             if v.Objects.Notification then
-                ts:Create(v.Objects.Notification, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {Position = UDim2.new(v.Objects.Notification.Position.X.Scale, v.Objects.Notification.Position.X.Offset, v.Objects.Notification.Position.Y.Scale, v.Objects.Notification.Position.Y.Offset + 50)}):Play()
+                TweenService:Create(v.Objects.Notification, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {Position = UDim2.new(v.Objects.Notification.Position.X.Scale, v.Objects.Notification.Position.X.Offset, v.Objects.Notification.Position.Y.Scale, v.Objects.Notification.Position.Y.Offset + 50)}):Play()
             end
         end
         
@@ -416,21 +406,21 @@ do
 
             for i, v in Night.Notifications.Active do
                 if v.Objects.Notification and v.Objects.Notification.Position.Y.Offset > NotificationData.Objects.Notification.Position.Y.Offset then
-                    ts:Create(v.Objects.Notification, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {Position = UDim2.new(v.Objects.Notification.Position.X.Scale, v.Objects.Notification.Position.X.Offset, v.Objects.Notification.Position.Y.Scale, v.Objects.Notification.Position.Y.Offset - 50)}):Play()
+                    TweenService:Create(v.Objects.Notification, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {Position = UDim2.new(v.Objects.Notification.Position.X.Scale, v.Objects.Notification.Position.X.Offset, v.Objects.Notification.Position.Y.Scale, v.Objects.Notification.Position.Y.Offset - 50)}):Play()
                 end
             end
 
             if anim then
-                ts:Create(TimeLineBar, TweenInfo.new(0.15), {ImageTransparency = 1}):Play()
+                TweenService:Create(TimeLineBar, TweenInfo.new(0.15), {ImageTransparency = 1}):Play()
                 for i,v in NotificationData.Objects.Notification:GetChildren() do
                     if v:IsA("ImageButton") or v:IsA("ImageLabel") then
-                        ts:Create(v, TweenInfo.new(0.15), {ImageTransparency = 1, BackgroundTransparency = 1}):Play()
+                        TweenService:Create(v, TweenInfo.new(0.15), {ImageTransparency = 1, BackgroundTransparency = 1}):Play()
                     elseif v:IsA("TextLabel") then
-                        ts:Create(v, TweenInfo.new(0.15), {TextTransparency = 1}):Play()
+                        TweenService:Create(v, TweenInfo.new(0.15), {TextTransparency = 1}):Play()
                     end
                 end
                 task.wait(0.05)
-                ts:Create(NotificationData.Objects.Notification, TweenInfo.new(0.2), {ImageTransparency = 1, BackgroundTransparency = 1}):Play()
+                TweenService:Create(NotificationData.Objects.Notification, TweenInfo.new(0.2), {ImageTransparency = 1, BackgroundTransparency = 1}):Play()
                 task.wait(0.22)
             end
 
@@ -457,7 +447,7 @@ do
         table.insert(Night.Connections, NotificationData.Connections.unconhover)
         table.insert(Night.Connections, NotificationData.Connections.closecon)
 
-        ts:Create(NotificationData.Objects.Notification, TweenInfo.new(0.15, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, 0, 0, 30)}):Play()
+        TweenService:Create(NotificationData.Objects.Notification, TweenInfo.new(0.15, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, 0, 0, 30)}):Play()
         if Night.Notifications.Active[flag] then
             flag = NotificationData.Description..tostring(math.random(0, 1000000000))
             Night.Notifications.Active[flag] = NotificationData
@@ -646,8 +636,8 @@ do
 
                 MobileButtonInfo.Functions.Drag = function(mouseStart: Vector2 | Vector3 | nil, frameStart: UDim2, input: InputObject?)
                     pcall(function()
-                        if currentCamera then
-                            local Viewport = currentCamera.ViewportSize
+                        if UserCamera then
+                            local Viewport = UserCamera.ViewportSize
                             local Delta = Vector2.new(0, 0)
                             local FrameSize = MobileButtonInfo.Instances.MainBG.AbsoluteSize
                             if mouseStart and input then
@@ -744,7 +734,7 @@ do
         ZoomFrame.BackgroundTransparency = 1
         ZoomFrame.ZIndex = 100000
         table.insert(Night.Connections, ZoomFrame.MouseWheelForward:Connect(function()
-            if uis:IsKeyDown(Enum.KeyCode.LeftControl) or uis:IsKeyDown(Enum.KeyCode.RightControl) and Night.Background.Objects.MainFrame.Visible then
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.RightControl) and Night.Background.Objects.MainFrame.Visible then
                 Night.Config.UI.Scale = Night.Config.UI.Scale + 0.05
                 if Night.Config.UI.Scale > 3 then
                     Night.Config.UI.Scale = 3
@@ -755,7 +745,7 @@ do
         end))
     
         table.insert(Night.Connections, ZoomFrame.MouseWheelBackward:Connect(function()
-            if uis:IsKeyDown(Enum.KeyCode.LeftControl) or uis:IsKeyDown(Enum.KeyCode.RightControl) and Night.Background.Objects.MainFrame.Visible then
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.RightControl) and Night.Background.Objects.MainFrame.Visible then
                 Night.Config.UI.Scale = Night.Config.UI.Scale - 0.05
                 if Night.Config.UI.Scale < 0.4 then
                     Night.Config.UI.Scale = 0.4
@@ -823,17 +813,17 @@ do
     
             table.insert(Night.Connections, buttondata.Button.MouseEnter:Connect(function()
                 hovergradient.Enabled = true
-                ts:Create(iconscale, TweenInfo.new(0.15), {Scale = 1.2}):Play()
+                TweenService:Create(iconscale, TweenInfo.new(0.15), {Scale = 1.2}):Play()
             end))
             table.insert(Night.Connections, buttondata.Button.MouseLeave:Connect(function()
                 hovergradient.Enabled = false
-                ts:Create(iconscale, TweenInfo.new(0.15), {Scale = 1}):Play()
+                TweenService:Create(iconscale, TweenInfo.new(0.15), {Scale = 1}):Play()
             end))
             table.insert(Night.Connections, buttondata.Button.MouseButton1Click:Connect(function() 
                 buttondata.Callback(buttondata)
-                ts:Create(iconscale, TweenInfo.new(0.15), {Scale = 1.4}):Play()
+                TweenService:Create(iconscale, TweenInfo.new(0.15), {Scale = 1.4}):Play()
                 task.wait(0.15)
-                ts:Create(iconscale, TweenInfo.new(0.15), {Scale = 1}):Play()
+                TweenService:Create(iconscale, TweenInfo.new(0.15), {Scale = 1}):Play()
             end))
     
             InitInfo.NavigationButtons[Data.Name] = buttondata
@@ -918,10 +908,10 @@ do
     
                 table.insert(Night.Connections, buttondata.Objects.Button.MouseButton1Click:Connect(function()
                     buttondata.Callbacks.Clicked(buttondata)
-                    ts:Create(ActualIconScale, TweenInfo.new(0.15), {Scale = 0.5}):Play()
+                    TweenService:Create(ActualIconScale, TweenInfo.new(0.15), {Scale = 0.5}):Play()
         
-                    ts:Create(buttondata.Objects.Selection, TweenInfo.new(0.15), {ImageTransparency = 0.9}):Play()
-                    ts:Create(ActualIconScale, TweenInfo.new(0.15), {Scale = 1}):Play()
+                    TweenService:Create(buttondata.Objects.Selection, TweenInfo.new(0.15), {ImageTransparency = 0.9}):Play()
+                    TweenService:Create(ActualIconScale, TweenInfo.new(0.15), {Scale = 1}):Play()
                 end))
     
                 if not Night.Mobile then
@@ -929,13 +919,13 @@ do
                         buttondata.Objects.Selection.ImageTransparency = 1
                         ActualIconScale.Scale = 1.2
     
-                        ts:Create(ActualIconScale, TweenInfo.new(0.15), {Scale = 1.2}):Play()
-                        ts:Create(buttondata.Objects.Selection, TweenInfo.new(0.15), {ImageTransparency = 0.8}):Play()
+                        TweenService:Create(ActualIconScale, TweenInfo.new(0.15), {Scale = 1.2}):Play()
+                        TweenService:Create(buttondata.Objects.Selection, TweenInfo.new(0.15), {ImageTransparency = 0.8}):Play()
                     end))
     
                     table.insert(Night.Connections, buttondata.Objects.Button.MouseLeave:Connect(function()
-                        ts:Create(ActualIconScale, TweenInfo.new(0.15), {Scale = 1}):Play()
-                        ts:Create(buttondata.Objects.Selection, TweenInfo.new(0.15), {ImageTransparency = 1}):Play()
+                        TweenService:Create(ActualIconScale, TweenInfo.new(0.15), {Scale = 1}):Play()
+                        TweenService:Create(buttondata.Objects.Selection, TweenInfo.new(0.15), {ImageTransparency = 1}):Play()
                         task.wait(0.15)
                         buttondata.Objects.Selection.ImageTransparency = 1
                         ActualIconScale.Scale = 1
@@ -952,7 +942,7 @@ do
             return buttondata
         end
     
-        table.insert(Night.Connections, uis.InputEnded:Connect(function(input)
+        table.insert(Night.Connections, UserInputService.InputEnded:Connect(function(input)
             if Night.InputEndFunc then
                 Night.InputEndFunc(input)
             end
@@ -960,7 +950,7 @@ do
     
         InitInfo.Functions.Resize = function(input : InputObject)
             if InitInfo.Data.Resizing and not Night.Config.UI.FullScreen then
-                if not currentCamera then return end
+                if not UserCamera then return end
                 local delta = input.Position - InitInfo.Data.LastInputPosition
         
                 local sensitivity = 0.008
@@ -975,7 +965,7 @@ do
                 local newScaleX = math.clamp(InitInfo.Objects.MainFrame.Size.X.Scale + scaleX, minScale, maxScaleX)
                 local newScaleY = math.clamp(InitInfo.Objects.MainFrame.Size.Y.Scale + scaleY, minScale, maxScaleY)
         
-                ts:Create(InitInfo.Objects.MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Size = UDim2.fromScale(newScaleX, newScaleY)}):Play()
+                TweenService:Create(InitInfo.Objects.MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Size = UDim2.fromScale(newScaleX, newScaleY)}):Play()
                 InitInfo.Data.LastInputPosition = input.Position
                 Night.Config.UI.Size = {X = newScaleX, Y = newScaleY}
             end
@@ -984,8 +974,8 @@ do
         InitInfo.Functions.Drag = function(mouseStart: Vector2 | Vector3 | nil, frameStart: UDim2, input: InputObject?)
             -- lowww taper fadeee
             pcall(function()
-                if currentCamera then
-                    local Viewport = currentCamera.ViewportSize
+                if UserCamera then
+                    local Viewport = UserCamera.ViewportSize
                     local Delta = Vector2.new(0, 0)
                     local FrameSize = InitInfo.Objects.MainFrame.AbsoluteSize
                     if mouseStart and input then
@@ -1005,7 +995,7 @@ do
     
     
         Night.CurrntInputChangeCallback = function() end 
-        table.insert(Night.Connections, uis.InputChanged:Connect(function(input)
+        table.insert(Night.Connections, UserInputService.InputChanged:Connect(function(input)
             Night.CurrntInputChangeCallback(input)
         end))
     
@@ -1052,21 +1042,21 @@ do
                             forcefullscreen = false
                         end
     
-                        ts:Create(InitInfo.Objects.MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(.5, .5), Size = UDim2.fromScale(1, 1)}):Play()
+                        TweenService:Create(InitInfo.Objects.MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(.5, .5), Size = UDim2.fromScale(1, 1)}):Play()
                         for i,v in Night.Corners do
-                            ts:Create(v, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {CornerRadius = UDim.new(0, 0)}):Play()
+                            TweenService:Create(v, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {CornerRadius = UDim.new(0, 0)}):Play()
                         end
-                        ts:Create(InitInfo.Objects.MainFrameScale, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Scale = 1}):Play()
+                        TweenService:Create(InitInfo.Objects.MainFrameScale, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Scale = 1}):Play()
                         self.Objects.ActualIcon.Image = "rbxassetid://11422140434"
                         InitInfo.WindowControls.Instances.Resize.Objects.ActualIcon.ImageTransparency = 0.5
                     else
                         self.Objects.ActualIcon.Image = "rbxassetid://11295287158"
                         InitInfo.WindowControls.Instances.Resize.Objects.ActualIcon.ImageTransparency = 0.2
-                        ts:Create(InitInfo.Objects.MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(Night.Config.UI.Position.X, Night.Config.UI.Position.Y), Size = UDim2.fromScale(Night.Config.UI.Size.X, Night.Config.UI.Size.Y)}):Play()
+                        TweenService:Create(InitInfo.Objects.MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(Night.Config.UI.Position.X, Night.Config.UI.Position.Y), Size = UDim2.fromScale(Night.Config.UI.Size.X, Night.Config.UI.Size.Y)}):Play()
                         for i,v in Night.Corners do
-                            ts:Create(v, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {CornerRadius = UDim.new(0, 20)}):Play()
+                            TweenService:Create(v, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {CornerRadius = UDim.new(0, 20)}):Play()
                         end
-                        ts:Create(InitInfo.Objects.MainFrameScale, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Scale = Night.Config.UI.Scale}):Play()
+                        TweenService:Create(InitInfo.Objects.MainFrameScale, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Scale = Night.Config.UI.Scale}):Play()
                     end
                 
                     Assets.Config.Save("UI", Night.Config.UI)
@@ -1090,11 +1080,11 @@ do
                             InitInfo.WindowControls.Instances.FullScreen.Objects.ActualIcon.Image = "rbxassetid://11295287158"
                             InitInfo.WindowControls.Instances.Resize.Objects.ActualIcon.ImageTransparency = 0.2
     
-                            ts:Create(InitInfo.Objects.MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(Night.Config.UI.Position.X, Night.Config.UI.Position.Y), Size = UDim2.fromScale(Night.Config.UI.Size.X, Night.Config.UI.Size.Y)}):Play()
+                            TweenService:Create(InitInfo.Objects.MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(Night.Config.UI.Position.X, Night.Config.UI.Position.Y), Size = UDim2.fromScale(Night.Config.UI.Size.X, Night.Config.UI.Size.Y)}):Play()
                             for i,v in Night.Corners do
-                                ts:Create(v, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {CornerRadius = UDim.new(0, 20)}):Play()
+                                TweenService:Create(v, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {CornerRadius = UDim.new(0, 20)}):Play()
                             end
-                            ts:Create(InitInfo.Objects.MainFrameScale, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Scale = Night.Config.UI.Scale}):Play()
+                            TweenService:Create(InitInfo.Objects.MainFrameScale, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Scale = Night.Config.UI.Scale}):Play()
                         end
     
                         InitInfo.Data.Dragging, InputStarting, FrameStarting = true, input.Position, InitInfo.Objects.MainFrame.Position
@@ -1119,9 +1109,9 @@ do
                     Night.ControlsVisible = not Night.ControlsVisible
                     if Night.ControlsVisible then
                         MainControlsWindow.Visible = true
-                        ts:Create(MainControlsWindow, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(1, 1), Size = UDim2.fromOffset(100, 50)}):Play()
+                        TweenService:Create(MainControlsWindow, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(1, 1), Size = UDim2.fromOffset(100, 50)}):Play()
                     else
-                        ts:Create(MainControlsWindow, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Position = UDim2.new(1, 100, 1, 0), Size = UDim2.fromOffset(50, 50)}):Play()
+                        TweenService:Create(MainControlsWindow, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {Position = UDim2.new(1, 100, 1, 0), Size = UDim2.fromOffset(50, 50)}):Play()
                         task.wait(0.5)
                         MainControlsWindow.Visible = false
                     end
@@ -1437,14 +1427,14 @@ do
                 InitInfo.Objects.Pageselector.ClipsDescendants = true
                 InitInfo.Objects.Pageselector.BackgroundTransparency = 1
         
-                ts:Create(InitInfo.Objects.Pageselector, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.9}):Play()
-                ts:Create(InitInfo.Objects.PageselectorButtons.Parent, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Position = UDim2.new(0, 60, 0.5, 0)}):Play()
-                ts:Create(InitInfo.Objects.MainPageselectorScale, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Scale = 1}):Play()
+                TweenService:Create(InitInfo.Objects.Pageselector, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.9}):Play()
+                TweenService:Create(InitInfo.Objects.PageselectorButtons.Parent, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Position = UDim2.new(0, 60, 0.5, 0)}):Play()
+                TweenService:Create(InitInfo.Objects.MainPageselectorScale, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Scale = 1}):Play()
         
             else
-                ts:Create(InitInfo.Objects.Pageselector, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
-                ts:Create(InitInfo.Objects.PageselectorButtons.Parent, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Position = UDim2.new(0, -10, 0.5, 0)}):Play()
-                ts:Create(InitInfo.Objects.MainPageselectorScale, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Scale = 0.5}):Play()
+                TweenService:Create(InitInfo.Objects.Pageselector, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+                TweenService:Create(InitInfo.Objects.PageselectorButtons.Parent, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Position = UDim2.new(0, -10, 0.5, 0)}):Play()
+                TweenService:Create(InitInfo.Objects.MainPageselectorScale, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Scale = 0.5}):Play()
                 task.wait(0.15)
                 InitInfo.Objects.Pageselector.Visible = false
                 InitInfo.Objects.Pageselector.ClipsDescendants = false
@@ -1554,13 +1544,13 @@ do
         ScrollList.HorizontalAlignment = Enum.HorizontalAlignment.Center
     
         table.insert(Night.Connections, PageData.Objects.PageselectorButton.MouseEnter:Connect(function()
-            ts:Create(PageData.Objects.PageselectorButton, TweenInfo.new(0.1), {BackgroundTransparency = 0.8}):Play()
-            ts:Create(PageSelectorButtonIconScale, TweenInfo.new(0.1), {Scale = 1.4}):Play()
+            TweenService:Create(PageData.Objects.PageselectorButton, TweenInfo.new(0.1), {BackgroundTransparency = 0.8}):Play()
+            TweenService:Create(PageSelectorButtonIconScale, TweenInfo.new(0.1), {Scale = 1.4}):Play()
         end))
     
         table.insert(Night.Connections, PageData.Objects.PageselectorButton.MouseLeave:Connect(function()
-            ts:Create(PageData.Objects.PageselectorButton, TweenInfo.new(0.1), {BackgroundTransparency = 1}):Play()
-            ts:Create(PageSelectorButtonIconScale, TweenInfo.new(0.1), {Scale = 1}):Play()
+            TweenService:Create(PageData.Objects.PageselectorButton, TweenInfo.new(0.1), {BackgroundTransparency = 1}):Play()
+            TweenService:Create(PageSelectorButtonIconScale, TweenInfo.new(0.1), {Scale = 1}):Play()
         end))
     
         table.insert(Night.Connections, PageData.Objects.PageselectorButton.MouseButton1Click:Connect(function()  
@@ -1570,11 +1560,11 @@ do
                     if v.Objects.ActualPage ~= PageData.Objects.ActualPage then
                         v.Selected = false
                         v.Objects.ActualPage.Visible = false
-                        ts:Create(v.Objects.ActualPage, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(0.5, 0, 1.2, 0), GroupTransparency = 1}):Play()
+                        TweenService:Create(v.Objects.ActualPage, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(0.5, 0, 1.2, 0), GroupTransparency = 1}):Play()
                     else
                         PageData.Selected = true
                         v.Objects.ActualPage.Visible = true
-                        ts:Create(v.Objects.ActualPage, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(0.5, 0, 1, 0), GroupTransparency = 0}):Play()
+                        TweenService:Create(v.Objects.ActualPage, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(0.5, 0, 1, 0), GroupTransparency = 0}):Play()
                     end
                 end
             end
@@ -1684,7 +1674,7 @@ do
         end
 
         if tab.Name == "Premium" then
-            tab.Tweens.PremiumGradient = ts:Create(strokegradient, TweenInfo.new(1.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, math.huge, true), {Offset = Vector2.new(1,0)})
+            tab.Tweens.PremiumGradient = TweenService:Create(strokegradient, TweenInfo.new(1.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, math.huge, true), {Offset = Vector2.new(1,0)})
             tab.Tweens.PremiumGradient:Play()
         end
 
@@ -1773,8 +1763,8 @@ do
 
         tab.Functions.Drag = function(mouseStart: Vector2 | Vector3 | nil, frameStart: UDim2, input: InputObject?)
             pcall(function()
-                if currentCamera then
-                    local Viewport = currentCamera.ViewportSize
+                if UserCamera then
+                    local Viewport = UserCamera.ViewportSize
                     local Delta = Vector2.new(0, 0)
                     if mouseStart and input then
                         Delta = (Vector2.new(input.Position.X, input.Position.Y) - Vector2.new(mouseStart.X, mouseStart.Y :: Vector2 & Vector3))
@@ -1791,7 +1781,7 @@ do
                             local TabPos = Tab.Position
                             if TabPos.X.Scale > 0.9 or 0 > TabPos.X.Scale or TabPos.Y.Scale >= 0.95 or 0 > TabPos.Y.Scale then
                                 if not flagged then
-                                    local t = ts:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 1})
+                                    local t = TweenService:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 1})
                                     t:Play()
                                     task.spawn(function()
                                         t.Completed:Wait()
@@ -1803,7 +1793,7 @@ do
                                 end
                             else
                                 if v.Objects.ActualTab.Visible then
-                                    ts:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 0.5}):Play()
+                                    TweenService:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 0.5}):Play()
                                     Night.Tabs.TabBackground.ZIndex = 1
                                     flagged = true
                                 end
@@ -2020,7 +2010,7 @@ do
                                 local TabPos = Tab.Position
                                 if TabPos.X.Scale > 0.9 or 0 > TabPos.X.Scale or TabPos.Y.Scale >= 0.95 or 0 > TabPos.Y.Scale then
                                     if not flagged then
-                                        local t = ts:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 1})
+                                        local t = TweenService:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 1})
                                         t:Play()
                                         task.spawn(function()
                                             t.Completed:Wait()
@@ -2034,15 +2024,15 @@ do
                                 else
                                     if v.Objects.ActualTab.Visible and v ~= tab or v == tab then
                                         Night.Tabs.TabBackground.ZIndex = 1
-                                        ts:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {ImageTransparency = 0.5}):Play()
+                                        TweenService:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {ImageTransparency = 0.5}):Play()
                                         Night.IsAllowedToHoverTabButton = true
                                         flagged = true
                                     end
                                 end
                             end
                         end
-                        ts:Create(tab.Objects.ActualTab, TweenInfo.new(0.8, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {ImageTransparency = Night.Config.UI.TabTransparency}):Play()
-                        ts:Create(TabScale, TweenInfo.new(0.8, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Scale = 1}):Play()
+                        TweenService:Create(tab.Objects.ActualTab, TweenInfo.new(0.8, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {ImageTransparency = Night.Config.UI.TabTransparency}):Play()
+                        TweenService:Create(TabScale, TweenInfo.new(0.8, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Scale = 1}):Play()
                     else
                         local flagged = false
                         for i,v in Night.Tabs.Tabs do
@@ -2051,7 +2041,7 @@ do
                                 local TabPos = Tab.Position
                                 if TabPos.X.Scale > 0.9 or 0 > TabPos.X.Scale or TabPos.Y.Scale >= 0.95 or 0 > TabPos.Y.Scale then
                                     if not flagged then
-                                        local t = ts:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 1})
+                                        local t = TweenService:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 1})
                                         t:Play()
                                         task.spawn(function()
                                             t.Completed:Wait()
@@ -2065,7 +2055,7 @@ do
                                 else
                                     if v.Objects.ActualTab.Visible and v ~= tab or v == tab then
                                         Night.Tabs.TabBackground.ZIndex = 1
-                                        ts:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {ImageTransparency = 0.5}):Play()
+                                        TweenService:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {ImageTransparency = 0.5}):Play()
                                         Night.IsAllowedToHoverTabButton = true
                                         flagged = true
                                     end
@@ -2094,8 +2084,8 @@ do
                     end
                     TabHeader.TextTransparency = 1
                     if anim and Night.Config.UI.Anim  then
-                        ts:Create(tab.Objects.ActualTab, TweenInfo.new(0.8, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {ImageTransparency = 1}):Play()
-                        ts:Create(TabScale, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Scale = 1.2}):Play()
+                        TweenService:Create(tab.Objects.ActualTab, TweenInfo.new(0.8, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {ImageTransparency = 1}):Play()
+                        TweenService:Create(TabScale, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Scale = 1.2}):Play()
 
                         local flagged = false
                         for i,v in Night.Tabs.Tabs do
@@ -2104,7 +2094,7 @@ do
                                 local TabPos = Tab.Position
                                 if TabPos.X.Scale > 0.9 or 0 > TabPos.X.Scale or TabPos.Y.Scale >= 0.95 or 0 > TabPos.Y.Scale then
                                     if not flagged then
-                                        local t = ts:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 1})
+                                        local t = TweenService:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 1})
                                         t:Play()
                                         task.spawn(function()
                                             t.Completed:Wait()
@@ -2117,7 +2107,7 @@ do
                                     end
                                 else
                                     if v.Objects.ActualTab.Visible and v ~= tab then
-                                        ts:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 0.5}):Play()
+                                        TweenService:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 0.5}):Play()
                                         Night.Tabs.TabBackground.ZIndex = 1
                                         Night.IsAllowedToHoverTabButton = true
                                         flagged = true
@@ -2137,7 +2127,7 @@ do
                                 local TabPos = Tab.Position
                                 if TabPos.X.Scale > 0.9 or 0 > TabPos.X.Scale or TabPos.Y.Scale >= 0.95 or 0 > TabPos.Y.Scale then
                                     if not flagged then
-                                        local t = ts:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 1})
+                                        local t = TweenService:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 1})
                                         t:Play()
                                         task.spawn(function()
                                             t.Completed:Wait()
@@ -2150,7 +2140,7 @@ do
                                     end
                                 else
                                     if v.Objects.ActualTab.Visible and v ~= tab then
-                                        ts:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 0.5}):Play()
+                                        TweenService:Create(Night.Tabs.TabBackground, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {ImageTransparency = 0.5}):Play()
                                         Night.Tabs.TabBackground.ZIndex = 1
                                         Night.IsAllowedToHoverTabButton = true
                                         flagged = true
@@ -2186,7 +2176,7 @@ do
         end
 
         local dashboardbuttonclickcon = tab.Objects.DashBoardButton.MouseButton1Click:Connect(function()
-            ts:Create(tab.Objects.DashBoardButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(17,17,17)}):Play()
+            TweenService:Create(tab.Objects.DashBoardButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(17,17,17)}):Play()
             tab.Functions.ToggleTab(not tab.Opened, true)
         end)
         table.insert(tab.Connections, dashboardbuttonclickcon)
@@ -2195,14 +2185,14 @@ do
 
         local dashboardbuttonhovercon =  tab.Objects.DashBoardButton.MouseEnter:Connect(function()
             if not Night.IsAllowedToHoverTabButton then
-                ts:Create(tab.Objects.DashBoardButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(40,40,40)}):Play()
+                TweenService:Create(tab.Objects.DashBoardButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(40,40,40)}):Play()
             end
         end)
         table.insert(tab.Connections, dashboardbuttonhovercon)
         table.insert(Night.Connections, dashboardbuttonhovercon)
 
         local dashboardbuttonleavecon = tab.Objects.DashBoardButton.MouseLeave:Connect(function()
-            ts:Create(tab.Objects.DashBoardButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play()
+            TweenService:Create(tab.Objects.DashBoardButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play()
         end)
         table.insert(tab.Connections, dashboardbuttonleavecon)
         table.insert(Night.Connections, dashboardbuttonleavecon)
@@ -2216,7 +2206,7 @@ do
         local searchclearcon =  SearchBarClear.MouseButton1Click:Connect(function()
             MainSearchBarTextBox.Text = ""
             tab.Functions.Search("")
-            ts:Create(SearchBarClearScale, TweenInfo.new(0.1), {Scale = 0}):Play()
+            TweenService:Create(SearchBarClearScale, TweenInfo.new(0.1), {Scale = 0}):Play()
         end)
         table.insert(tab.Connections, searchclearcon)
         table.insert(Night.Connections, searchclearcon)
@@ -2224,11 +2214,11 @@ do
         local searchfocuslostcon =  MainSearchBarTextBox.FocusLost:Connect(function()
             tab.Functions.Search(MainSearchBarTextBox.Text)
             if MainSearchBarTextBox.Text ~= "" then
-                ts:Create(SearchBarClearScale, TweenInfo.new(0.1), {Scale = 1}):Play()
+                TweenService:Create(SearchBarClearScale, TweenInfo.new(0.1), {Scale = 1}):Play()
             else
-                ts:Create(SearchBarClearScale, TweenInfo.new(0.3), {Scale = 0}):Play()
+                TweenService:Create(SearchBarClearScale, TweenInfo.new(0.3), {Scale = 0}):Play()
             end
-            ts:Create(SearchBar, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(0,0,0), BackgroundTransparency = 0.7}):Play()
+            TweenService:Create(SearchBar, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(0,0,0), BackgroundTransparency = 0.7}):Play()
             task.wait(0.3)
             SearchBarFocusGradient.Enabled = false
             if tab.Tweens.SearchBackGround then
@@ -2240,10 +2230,10 @@ do
 
         local searchfocuscon =  MainSearchBarTextBox.Focused:Connect(function()
             SearchBarFocusGradient.Enabled = true
-            tab.Tweens.SearchBackGround = ts:Create(SearchBarFocusGradient, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, math.huge, true), {Offset = Vector2.new(.5, 0)})
+            tab.Tweens.SearchBackGround = TweenService:Create(SearchBarFocusGradient, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, math.huge, true), {Offset = Vector2.new(.5, 0)})
             tab.Tweens.SearchBackGround:Play()
 
-            ts:Create(SearchBar, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(255,255,255), BackgroundTransparency = 0}):Play()
+            TweenService:Create(SearchBar, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(255,255,255), BackgroundTransparency = 0}):Play()
         end)
         table.insert(tab.Connections, searchfocuscon)
         table.insert(Night.Connections, searchfocuscon)
@@ -2496,17 +2486,17 @@ do
                     Requirements.Visible = true
                     Requirements.AnchorPoint = Vector2.new(0.5, 1)
                     Requirements.Position = UDim2.new(0.5, 0, 1, 2)
-                    ts:Create(Requirements, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 2)}):Play()
-                    ts:Create(ModuleData.Objects.Module, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, 150)}):Play()
+                    TweenService:Create(Requirements, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 2)}):Play()
+                    TweenService:Create(ModuleData.Objects.Module, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, 150)}):Play()
                 else
-                    ts:Create(ModuleData.Objects.Module, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, 65)}):Play()
+                    TweenService:Create(ModuleData.Objects.Module, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, 65)}):Play()
                     if not ModuleData.Data.Enabled then
                         Requirements.Visible = false
-                        ts:Create(Requirements, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 2)}):Play()
+                        TweenService:Create(Requirements, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 2)}):Play()
                     else
-                        ts:Create(DescriptionText, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
-                        ts:Create(SettingsButton, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 1, BackgroundTransparency = 1}):Play()
-                        ts:Create(SettingsButtonIcon, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+                        TweenService:Create(DescriptionText, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+                        TweenService:Create(SettingsButton, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 1, BackgroundTransparency = 1}):Play()
+                        TweenService:Create(SettingsButtonIcon, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
                         task.wait(0.5)
                         DescriptionText.Visible = false
                         SettingsButton.Visible = false
@@ -2565,16 +2555,16 @@ do
                             Requirements.AnchorPoint = Vector2.new(0.5, 0)
                             Requirements.Position = UDim2.new(0.5, 0, 0, 2)
                         end
-                        ts:Create(ToggleButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(32, 175, 77)}):Play()
-                        ts:Create(ToggleButtonEnabledIcon, TweenInfo.new(0.1), {ImageTransparency = 1}):Play()
+                        TweenService:Create(ToggleButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(32, 175, 77)}):Play()
+                        TweenService:Create(ToggleButtonEnabledIcon, TweenInfo.new(0.1), {ImageTransparency = 1}):Play()
                         task.wait(0.05)
                         ToggleButtonEnabledIcon.ImageRectOffset = Vector2.new(644, 204)
                         ToggleButtonEnabledIcon.ImageRectSize = Vector2.new(36, 36)
-                        ts:Create(ToggleButtonEnabledIcon, TweenInfo.new(0.1), {ImageTransparency = 0}):Play()
+                        TweenService:Create(ToggleButtonEnabledIcon, TweenInfo.new(0.1), {ImageTransparency = 0}):Play()
                         if notify and Night.Config.UI.Notifications then
                             Assets.Notifications.Send({
                                 Description = ModuleData.Name.." enabled!",
-                                Duration = 0.5
+                                Duration = 2.5
                             })
                         end
                     end
@@ -2596,12 +2586,12 @@ do
                             ModuleData.Data.ArrayIndex = nil
                         end
 
-                        ts:Create(ToggleButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(43, 43, 43)}):Play()
-                        ts:Create(ToggleButtonEnabledIcon, TweenInfo.new(0.1), {ImageTransparency = 1}):Play()
+                        TweenService:Create(ToggleButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(43, 43, 43)}):Play()
+                        TweenService:Create(ToggleButtonEnabledIcon, TweenInfo.new(0.1), {ImageTransparency = 1}):Play()
                         task.wait(0.05)
                         ToggleButtonEnabledIcon.ImageRectOffset = Vector2.new(284, 4)
                         ToggleButtonEnabledIcon.ImageRectSize = Vector2.new(24, 24)
-                        ts:Create(ToggleButtonEnabledIcon, TweenInfo.new(0.1), {ImageTransparency = 0}):Play()
+                        TweenService:Create(ToggleButtonEnabledIcon, TweenInfo.new(0.1), {ImageTransparency = 0}):Play()
                         if not DropOpen then
                             Requirements.Visible = false
                             DescriptionText.Visible = true
@@ -2612,7 +2602,7 @@ do
                         if notify and Night.Config.UI.Notifications then
                             Assets.Notifications.Send({
                                 Description = ModuleData.Name.." disabled!",
-                                Duration = 0.5
+                                Duration = 2.5
                             })
                         end
                     end
@@ -2703,7 +2693,7 @@ do
                 end
             end
 
-            local keybindinputbegancon = uis.InputBegan:Connect(function(input)
+            local keybindinputbegancon = UserInputService.InputBegan:Connect(function(input)
                 if input.KeyCode then
                     if ModuleData.Data.SettingKeybind then
                         if ModuleData.Data.Keybind and ModuleData.Data.Keybind == input.KeyCode then
@@ -2712,7 +2702,7 @@ do
                         end
                         ModuleData.Functions.BindKeybind(input.KeyCode.Name, true)
                     else
-                        if not uis:GetFocusedTextBox() then
+                        if not UserInputService:GetFocusedTextBox() then
                             if ModuleData.Data.Keybind and ModuleData.Data.Keybind == input.KeyCode then
                                 ModuleData.Functions.Toggle(not ModuleData.Data.Enabled, false, true, true, true)
                             end
@@ -2735,11 +2725,15 @@ do
                 ModuleData.Data.SettingsOpen = true
                 tab.Objects.ActualTab.ClipsDescendants = true      
                 tab.ClipNeeded = true          
-                ts:Create(tab.Objects.ScrollFrame, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(-1.8, 0, 0.04, 50)}):Play()
-                ts:Create(TabHeader, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(-1.8, 0.04)}):Play()
-                ts:Create(CloseButton, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(-1.8, 0, 0, 5)}):Play()
-                ts:Create(KeyBindButton, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(-1.8,0,1,-20)}):Play()
+                TweenService:Create(tab.Objects.ScrollFrame, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(-1.8, 0, 0.04, 50)}):Play()
+                TweenService:Create(TabHeader, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(-1.8, 0.04)}):Play()
+                TweenService:Create(CloseButton, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(-1.8, 0, 0, 5)}):Play()
+                TweenService:Create(KeyBindButton, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(-1.8,0,1,-20)}):Play()
                 task.wait(0.2)
+                if not tab.Data.SettingsOpen then
+                    return
+                end
+                
                 for i,v in tab.Modules do
                     v.Objects.Module.Visible = false
                 end
@@ -2774,10 +2768,10 @@ do
                     end
                 end
 
-                ts:Create(tab.Objects.ScrollFrame, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(0.5, 0, 0.04, 50)}):Play()
-                ts:Create(TabHeader, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(0.5, 0.04)}):Play()
-                ts:Create(Backbutton, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.fromOffset(5, 5)}):Play()
-                ts:Create(KeyBindButton, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(0.5,0,1,-20)}):Play()
+                TweenService:Create(tab.Objects.ScrollFrame, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(0.5, 0, 0.04, 50)}):Play()
+                TweenService:Create(TabHeader, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(0.5, 0.04)}):Play()
+                TweenService:Create(Backbutton, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.fromOffset(5, 5)}):Play()
+                TweenService:Create(KeyBindButton, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(0.5,0,1,-20)}):Play()
                 tab.ClipNeeded = false
                 task.wait(0.8)
                 if not tab.ClipNeeded then
@@ -2799,10 +2793,10 @@ do
                 ModuleSettings.Parent = ModuleData.Objects.Module
                 tab.Objects.ScrollFrame.Size = UDim2.new(1, -10, 1, -70)
                 ModuleData.Objects.Module.Size = UDim2.new(1, 0, 0, 150)
-                ts:Create(tab.Objects.ScrollFrame, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(1.8, 0, 0.04, 50)}):Play()
-                ts:Create(TabHeader, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(1.8, 0.04)}):Play()
-                ts:Create(Backbutton, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(1.8, 0, 0, 5)}):Play()
-                ts:Create(KeyBindButton, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(1.8,0,1,-20)}):Play()
+                TweenService:Create(tab.Objects.ScrollFrame, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(1.8, 0, 0.04, 50)}):Play()
+                TweenService:Create(TabHeader, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(1.8, 0.04)}):Play()
+                TweenService:Create(Backbutton, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(1.8, 0, 0, 5)}):Play()
+                TweenService:Create(KeyBindButton, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(1.8,0,1,-20)}):Play()
                 task.wait(0.2)
                 for i,v in tab.Modules do
                     v.Objects.Module.Visible = true
@@ -2832,9 +2826,9 @@ do
                 end
 
 
-                ts:Create(tab.Objects.ScrollFrame, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(0.5, 0, 0.04, 50)}):Play()
-                ts:Create(TabHeader, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(0.5, 0.04)}):Play()
-                ts:Create(CloseButton, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(1, -5, 0, 5)}):Play()
+                TweenService:Create(tab.Objects.ScrollFrame, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(0.5, 0, 0.04, 50)}):Play()
+                TweenService:Create(TabHeader, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.fromScale(0.5, 0.04)}):Play()
+                TweenService:Create(CloseButton, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {Position = UDim2.new(1, -5, 0, 5)}):Play()
                 tab.ClipNeeded = false
                 task.wait(0.8)
                 if not tab.ClipNeeded then
@@ -3121,11 +3115,11 @@ do
                         MiniToggleData.Callback(MiniToggleData, enabled)
                     end
                     if enabled then
-                        ts:Create(ToggleBox, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0, BackgroundColor3 = Color3.fromRGB(195, 195, 195)}):Play()
-                        ts:Create(ToggleCircle, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(0.95, 0.5)}):Play()
+                        TweenService:Create(ToggleBox, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0, BackgroundColor3 = Color3.fromRGB(195, 195, 195)}):Play()
+                        TweenService:Create(ToggleCircle, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(0.95, 0.5)}):Play()
                     else
-                        ts:Create(ToggleCircle, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0.05, 0.5)}):Play()
-                        ts:Create(ToggleBox, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.4, BackgroundColor3 = Color3.fromRGB(65, 65, 65)}):Play()
+                        TweenService:Create(ToggleCircle, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0.05, 0.5)}):Play()
+                        TweenService:Create(ToggleBox, TweenInfo.new(0.8, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.4, BackgroundColor3 = Color3.fromRGB(65, 65, 65)}):Play()
 
                     end
                     MiniToggleData.Enabled = enabled
@@ -3299,11 +3293,11 @@ do
                             if tonumber(SliderValue2.Text) < value then return end
                             local val = math.clamp((tonumber(value)-SliderData.Min)/(SliderData.Max-SliderData.Min), 0, 1)
                             local val2 = math.clamp((tonumber(SliderValue2.Text)-SliderData.Min)/(SliderData.Max-SliderData.Min) - val, 0, 1)
-                            ts:Create(Fill, TweenInfo.new(0.45), {Size = UDim2.fromScale(val2 , 1), Position = UDim2.fromScale(val, 0.5)}):Play()
+                            TweenService:Create(Fill, TweenInfo.new(0.45), {Size = UDim2.fromScale(val2 , 1), Position = UDim2.fromScale(val, 0.5)}):Play()
                             SliderValue1.Text = tostring(value)
                         elseif target == 1 and not SliderData.Multi or target == 2 then
                             if SliderData.Multi and value > tonumber(SliderValue1.Text) or not SliderData.Multi then
-                                ts:Create(Fill, TweenInfo.new(0.45), {Size = UDim2.fromScale(math.clamp((tonumber(value)-SliderData.Min)/(SliderData.Max-SliderData.Min) - Fill.Position.X.Scale, 0, 1), 1)}):Play()
+                                TweenService:Create(Fill, TweenInfo.new(0.45), {Size = UDim2.fromScale(math.clamp((tonumber(value)-SliderData.Min)/(SliderData.Max-SliderData.Min) - Fill.Position.X.Scale, 0, 1), 1)}):Play()
                                 SliderValue2.Text = tostring(value)
                             else
                                 return
@@ -3311,18 +3305,18 @@ do
                         elseif not target then
                             if SliderData.Multi then
                                 if SliderData.Multi and info.Value2 > tonumber(SliderValue1.Text) or not SliderData.Multi then
-                                    ts:Create(Fill, TweenInfo.new(0.45), {Size = UDim2.fromScale(math.clamp((tonumber(info.Value2)-SliderData.Min)/(SliderData.Max-SliderData.Min) - Fill.Position.X.Scale, 0, 1), 1)}):Play()
+                                    TweenService:Create(Fill, TweenInfo.new(0.45), {Size = UDim2.fromScale(math.clamp((tonumber(info.Value2)-SliderData.Min)/(SliderData.Max-SliderData.Min) - Fill.Position.X.Scale, 0, 1), 1)}):Play()
                                     SliderValue2.Text = tostring(info.Value2)
                                 end
 
                                 if tonumber(SliderValue2.Text) >= info.Value1 then
                                     local val = math.clamp((tonumber(info.Value1)-SliderData.Min)/(SliderData.Max-SliderData.Min), 0, 1)
                                     local val2 = math.clamp((tonumber(SliderValue2.Text)-SliderData.Min)/(SliderData.Max-SliderData.Min) - val, 0, 1)
-                                    ts:Create(Fill, TweenInfo.new(0.45), {Size = UDim2.fromScale(val2 , 1), Position = UDim2.fromScale(val, 0.5)}):Play()
+                                    TweenService:Create(Fill, TweenInfo.new(0.45), {Size = UDim2.fromScale(val2 , 1), Position = UDim2.fromScale(val, 0.5)}):Play()
                                     SliderValue1.Text = tostring(info.Value1)
                                 end
                             else
-                                ts:Create(Fill, TweenInfo.new(0.45), {Size = UDim2.fromScale(math.clamp((tonumber(info.Value2)-SliderData.Min)/(SliderData.Max-SliderData.Min) - Fill.Position.X.Scale, 0, 1), 1)}):Play()
+                                TweenService:Create(Fill, TweenInfo.new(0.45), {Size = UDim2.fromScale(math.clamp((tonumber(info.Value2)-SliderData.Min)/(SliderData.Max-SliderData.Min) - Fill.Position.X.Scale, 0, 1), 1)}):Play()
                                 SliderValue2.Text = tostring(info.Value2)
                             end
                         end
@@ -3376,7 +3370,7 @@ do
                     local sliderdragbuttonclickcon2 =  Circle1.MouseButton1Down:Connect(function()
                         Night.CurrntInputChangeCallback = function(input)
                             if SliderData.Data.Dragging then
-                                local mouse = uis:GetMouseLocation()
+                                local mouse = UserInputService:GetMouseLocation()
                                 local relativePos = mouse-SliderBox.AbsolutePosition
                                 local percent = math.clamp(relativePos.X/(SliderBox.AbsoluteSize.X - 20), 0, 1)
                                 local value = math.floor(((((SliderData.Max - SliderData.Min) * percent) + SliderData.Min) * (10 ^ SliderData.Decimals)) + 0.5) / (10 ^ SliderData.Decimals) 
@@ -3403,7 +3397,7 @@ do
                     sliderdragbuttonclickcon = SliderData.Objects.MainInstance.MouseButton1Down:Connect(function()
                         Night.CurrntInputChangeCallback = function(input)
                             if SliderData.Data.Dragging then
-                                local mouse = uis:GetMouseLocation()
+                                local mouse = UserInputService:GetMouseLocation()
                                 local relativePos = mouse-SliderBox.AbsolutePosition
                                 local percent = math.clamp(relativePos.X/(SliderBox.AbsoluteSize.X - 20), 0, 1)
                                 local value = math.floor(((((SliderData.Max - SliderData.Min) * percent) + SliderData.Min) * (10 ^ SliderData.Decimals)) + 0.5) / (10 ^ SliderData.Decimals) 
@@ -3425,7 +3419,7 @@ do
                     sliderdragbuttonclickcon = Circle2.MouseButton1Down:Connect(function()
                         Night.CurrntInputChangeCallback = function(input)
                             if SliderData.Data.Dragging then
-                                local mouse = uis:GetMouseLocation()
+                                local mouse = UserInputService:GetMouseLocation()
                                 local relativePos = mouse-SliderBox.AbsolutePosition
                                 local percent = math.clamp(relativePos.X/(SliderBox.AbsoluteSize.X - 20), 0, 1)
                                 local value = math.floor(((((SliderData.Max - SliderData.Min) * percent) + SliderData.Min) * (10 ^ SliderData.Decimals)) + 0.5) / (10 ^ SliderData.Decimals) 
@@ -3751,13 +3745,13 @@ do
                             extend = 88
                         end
 
-                        ts:Create(DropdownData.Objects.MainInstance, TweenInfo.new(0.45, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, 125 + extend)}):Play()
-                        ts:Create(DropBox, TweenInfo.new(0.45, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, 35 + extend)}):Play()
-                        ts:Create(OptionsList, TweenInfo.new(0.45, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, extend)}):Play()
+                        TweenService:Create(DropdownData.Objects.MainInstance, TweenInfo.new(0.45, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, 125 + extend)}):Play()
+                        TweenService:Create(DropBox, TweenInfo.new(0.45, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, 35 + extend)}):Play()
+                        TweenService:Create(OptionsList, TweenInfo.new(0.45, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, extend)}):Play()
                     else
-                        ts:Create(OptionsList, TweenInfo.new(0.45, Enum.EasingStyle.Exponential), {Size = UDim2.fromScale(1, 0)}):Play()
-                        ts:Create(DropBox, TweenInfo.new(0.45, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, 35)}):Play()
-                        ts:Create(DropdownData.Objects.MainInstance, TweenInfo.new(0.45, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, 125)}):Play()
+                        TweenService:Create(OptionsList, TweenInfo.new(0.45, Enum.EasingStyle.Exponential), {Size = UDim2.fromScale(1, 0)}):Play()
+                        TweenService:Create(DropBox, TweenInfo.new(0.45, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, 35)}):Play()
+                        TweenService:Create(DropdownData.Objects.MainInstance, TweenInfo.new(0.45, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, 0, 0, 125)}):Play()
                     end
                 end)
                 table.insert(DropdownData.Connections, OpenCon)
@@ -4079,8 +4073,8 @@ do
                     end
                 end)
 
-                local CallbackCon = uis.InputBegan:Connect(function(input)
-                    if uis:GetFocusedTextBox() and not KeybindData.Data.Binding then return end
+                local CallbackCon = UserInputService.InputBegan:Connect(function(input)
+                    if UserInputService:GetFocusedTextBox() and not KeybindData.Data.Binding then return end
                     if KeybindData.Data.Binding then
                         if input.KeyCode and input.KeyCode.Name ~= "Unknown" then
                             KeybindData.Data.Keybind = input.KeyCode.Name
@@ -4109,8 +4103,8 @@ do
                     end
                 end)
 
-                local EndCon = uis.InputEnded:Connect(function(input)
-                    if uis:GetFocusedTextBox() then return end
+                local EndCon = UserInputService.InputEnded:Connect(function(input)
+                    if UserInputService:GetFocusedTextBox() then return end
                     if KeybindData.Data.Keybind and KeybindData.Data.Keybind == input.KeyCode.Name then
                         if KeybindData.Data.Binding then
                             KeybindData.Data.Binding = false
@@ -4439,7 +4433,7 @@ end
 
 do    
     if not Night then 
-        plrs.LocalPlayer:Kick("Night not supported/couldn't load global environment")
+        LocalPlayer:Kick("Night not supported/couldn't load global environment")
         return 
     end
 
@@ -4533,7 +4527,7 @@ do
             MainSettings.Functions.NewButton({Name = "Change Keybind", Callback = function(self)
                 self.Objects.MainButtonText.Text = "Press the key you want to bind"
                 local changecon = nil
-                changecon = uis.InputBegan:Connect(function(input)
+                changecon = UserInputService.InputBegan:Connect(function(input)
                     if input and input.KeyCode.Name ~= "Unknown" then
                         cantogglewithkeybind = false
                         self.Objects.MainButtonText.Text = "Changed Keybind to " .. input.KeyCode.Name
@@ -4687,9 +4681,9 @@ do
                     Night.Background.Objects.WindowControls.GroupTransparency = 1
 
 
-                    table.insert(ToggleTweens, ts:Create(Night.Background.Objects.MainFrame, tweenInfo, {BackgroundTransparency = 0.1, ImageTransparency = 0.8}))
-                    table.insert(ToggleTweens, ts:Create(Night.Background.Objects.WindowControls, tweenInfo, {GroupTransparency = 0.4}))
-                    table.insert(ToggleTweens, ts:Create(Night.Background.Objects.MainFrameScale, tweenInfo, {Scale = 1}))
+                    table.insert(ToggleTweens, TweenService:Create(Night.Background.Objects.MainFrame, tweenInfo, {BackgroundTransparency = 0.1, ImageTransparency = 0.8}))
+                    table.insert(ToggleTweens, TweenService:Create(Night.Background.Objects.WindowControls, tweenInfo, {GroupTransparency = 0.4}))
+                    table.insert(ToggleTweens, TweenService:Create(Night.Background.Objects.MainFrameScale, tweenInfo, {Scale = 1}))
 
                     for i,v in Restore do
                         v.Visible = true
@@ -4740,9 +4734,9 @@ do
                     end
                 end
 
-                table.insert(ToggleTweens, ts:Create(Night.Background.Objects.MainFrame, tweenInfo, {BackgroundTransparency = 1, ImageTransparency = 1}))
-                table.insert(ToggleTweens, ts:Create(Night.Background.Objects.WindowControls, tweenInfo, {GroupTransparency = 1}))
-                table.insert(ToggleTweens, ts:Create(Night.Background.Objects.MainFrameScale, tweenInfo, {Scale = 1.2}))
+                table.insert(ToggleTweens, TweenService:Create(Night.Background.Objects.MainFrame, tweenInfo, {BackgroundTransparency = 1, ImageTransparency = 1}))
+                table.insert(ToggleTweens, TweenService:Create(Night.Background.Objects.WindowControls, tweenInfo, {GroupTransparency = 1}))
+                table.insert(ToggleTweens, TweenService:Create(Night.Background.Objects.MainFrameScale, tweenInfo, {Scale = 1.2}))
 
                 if Night.Pageselector.Objects.Pageselector.Visible then
                     Night.Pageselector.Objects.Pageselector.Visible = false
@@ -4776,8 +4770,8 @@ do
             end
         end
     end
-    table.insert(Night.Connections, uis.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed and uis:GetFocusedTextBox() or not cantogglewithkeybind then return end
+    table.insert(Night.Connections, UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed and UserInputService:GetFocusedTextBox() or not cantogglewithkeybind then return end
         if input.KeyCode.Name == Night.Config.UI.ToggleKeyCode then
             Assets.Main.ToggleVisibility(not Night.Background.Objects.MainFrame.Visible)
         end
