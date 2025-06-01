@@ -294,7 +294,7 @@ local GetSpeedModifier = function(val: number)
         end
 
 		if speedOrb ~= 0 then 
-			speed += add and 18 or val + 3
+			speed += add and 16 or val + 1
 		end
 	end
 
@@ -606,11 +606,11 @@ local SpeedData
     })
 
     SpeedData.Toggle.Functions.Settings.Slider({
-        Name = "Boost Increase",
+        Name = "Speed Increase",
         Description = "Value to increase when using a speed boost",
         Min = 20,
-        Max = 45, 
-        Default = 45,
+        Max = 23, 
+        Default = 23,
         Flag = "SpeedBoostIncrease",
         Callback = function(self, callback: number)
             SpeedData.Settings.Increase = callback
@@ -687,7 +687,7 @@ local SpeedData
         Description = "Amount of speed to boost",
         Min = 1,
         Max = 30,
-        Default = 25,
+        Default = 23,
         Hide = true,
         Flag = "SpeedDamageBoostIncrease",
         Callback = function(self, callback)
@@ -871,8 +871,8 @@ local FlyData = {
         Name = "Speed Increase",
         Description = "Amount of speed to increase with a boost",
         Min = 20,
-        Max = 45,
-        Default = 45,
+        Max = 23,
+        Default = 23,
         Flag = "FlySpeedIncrease",
         Callback = function(self, callback)
             FlyData.Settings.BoostIncrease = callback
@@ -1035,9 +1035,9 @@ local FlyData = {
     table.insert(BoostStuff, FlyData.Toggle.Functions.Settings.Slider({
         Name = "Damage Speed Increase",
         Description = "Amount of speed to increase when damage boosting",
-        Min = 0,
+        Min = 1,
         Max = 30,
-        Default = 25,
+        Default = 23,
         Hide = true,
         Flag = "FlySpeedDamageIncrease",
         Callback = function(self, callback)
@@ -4903,6 +4903,26 @@ local GetYPos = function()
     return pos
 end
 
+local MakeWater = function(mode, bool)
+    local Terrain = workspace.Terrain
+            
+    Terrain:FillBlock(
+        CFrame.new(LP.Character.HumanoidRootPart.Position.X, GetYPos(), LP.Character.HumanoidRootPart.Position.Z),
+        Vector3.new(5000, 0.01, 5000),
+        Enum.Material[mode]
+    )
+
+    Terrain.WaterColor = Color3.fromRGB(10, 70, 80)
+    Terrain.WaterReflectance = 0.7
+    Terrain.WaterTransparency = 0.25
+    Terrain.WaterWaveSize = 0.13
+    Terrain.WaterWaveSpeed = 8 
+    
+    if LP.Character:FindFirstChild("Humanoid") then
+        LP.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming, bool)
+    end
+end
+
 (function()
     local AntiVoid = {
         Settings = {
@@ -4913,6 +4933,7 @@ end
             Power = 10,
             Jumps = 7,
             Visible = 0.6,
+            Water = false,
             Mode = "Launch",
             Smooth = "Accurate",
             Material = "ForceField",
@@ -4942,17 +4963,23 @@ end
 
                 AntiVoid.Position = Functions.IsAlive() and LP.Character.HumanoidRootPart.Position.Y + 10
                 task.spawn(function()
+                    repeat task.wait() until Functions.IsAlive()
+
+                    if AntiVoid.Settings.Water then
+                        MakeWater("Water", false)
+                    end
+
                     repeat
                         AntiVoid.Part.Color = Color3.fromRGB(AntiVoid.Settings.Color.R, AntiVoid.Settings.Color.G, AntiVoid.Settings.Color.B)
                         AntiVoid.Part.Material = Enum.Material[AntiVoid.Settings.Material]
-                        AntiVoid.Part.Transparency = 1 - AntiVoid.Settings.Visible
+                        AntiVoid.Part.Transparency = AntiVoid.Settings.Water and 1 or 1 - AntiVoid.Settings.Visible
                         AntiVoid.Part.CanCollide = AntiVoid.Settings.Mode ~= "Launch"
 
                         if Functions.IsAlive() and LP.Character.Humanoid.FloorMaterial ~= Enum.Material.Air then
                             AntiVoid.Position = LP.Character.HumanoidRootPart.Position.Y
                         end
 
-                        task.wait()
+                        task.wait(0.1)
                     until not self.Data.Enabled
                 end)
 
@@ -4990,10 +5017,14 @@ end
                     AntiVoid.Part:Destroy()
                     AntiVoid.Part = nil
                 end
+
                 if AntiVoid.Connect then
                     AntiVoid.Connect:Disconnect()
                     AntiVoid.Connect = nil
                 end
+
+                repeat task.wait() until Functions.IsAlive()
+                MakeWater("Air", true)
             end
         end
     })
@@ -5086,6 +5117,16 @@ end
         Flag = "AntiVoidJumps",
         Callback = function(self, value)
             AntiVoid.Settings.Jumps = value
+        end
+    })
+
+    AntiVoid.Toggle.Functions.Settings.MiniToggle({
+        Name = "Water",
+        Description = "Replaces the AntiVoid part with water",
+        Flag = "AntiVoidWater",
+        Default = true,
+        Callback = function(self, value)
+            AntiVoid.Settings.Water = value
         end
     })
 
@@ -5286,27 +5327,40 @@ end)();
             if callback then
                 repeat task.wait() until GetMatchState() ~= 0
 
+                local Loop
                 local VoidDrop = function()
-                    repeat
-                        if Functions.IsAlive() and (LP.Character:GetAttribute('InflatedBalloons') or 0) <= 0 and LP.Character.HumanoidRootPart.Position.Y < (GetYPos() - AutoVoidDrop.Settings.Position) then
-                            if (AutoVoidDrop.Settings.Owl and not LP.Character.HumanoidRootPart:FindFirstChild('OwlLiftForce')) or not AutoVoidDrop.Settings.Owl then
-                                for _, v in AutoVoidDrop.Settings.Items do
-                                    local Item = GetItemType(v, false, false)
-                                    if Item then
-                                        Rep.rbxts_include.node_modules["@rbxts"].net.out._NetManaged.DropItem:InvokeServer({
-                                            item = Item.Item.tool,
-                                            amount = Item.Item.amount
-                                        })
+                    if Loop then
+                        task.cancel(Loop)
+                        Loop = nil
+                    end
+
+                    Loop = task.spawn(function()
+                        repeat
+                            if Functions.IsAlive() and (LP.Character:GetAttribute('InflatedBalloons') or 0) <= 0 and LP.Character.HumanoidRootPart.Position.Y < (GetYPos() - AutoVoidDrop.Settings.Position) then
+                                if (AutoVoidDrop.Settings.Owl and not LP.Character.HumanoidRootPart:FindFirstChild('OwlLiftForce')) or not AutoVoidDrop.Settings.Owl then
+                                    for _, v in AutoVoidDrop.Settings.Items do
+                                        local Item = GetItemType(v, false, false)
+                                        if Item then
+                                            Rep.rbxts_include.node_modules["@rbxts"].net.out._NetManaged.DropItem:InvokeServer({
+                                                item = Item.Item.tool,
+                                                amount = Item.Item.amount
+                                            })
+                                        end
                                     end
                                 end
                             end
-                        end
-                        task.wait(AutoVoidDrop.Settings.Delay)
-                    until not self.Data.Enabled
+                            task.wait(AutoVoidDrop.Settings.Delay)
+                        until not self.Data.Enabled
+                    end)
                 end
 
                 LP.CharacterAdded:Connect(VoidDrop)
                 VoidDrop()
+            else
+                if Loop then
+                    task.cancel(Loop)
+                    Loop = nil
+                end
             end
         end
     })
@@ -5372,7 +5426,7 @@ end)();
             if callback then
                 repeat
                     GameData.Controllers.BlockBreaker.cooldown = FastBreak.Settings.Speed
-					task.wait()
+					task.wait(0.1)
 				until not self.Data.Enabled
 			else
 				GameData.Controllers.BlockBreaker.cooldown = 0.3
@@ -5406,7 +5460,7 @@ end)();
             if callback then
                 repeat
                     GameData.Controllers.BlockBreaker.range = FarBreak.Settings.Range
-					task.wait()
+					task.wait(0.1)
 				until not self.Data.Enabled
 			else
 				GameData.Controllers.BlockBreaker.range = 18
