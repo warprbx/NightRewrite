@@ -3533,6 +3533,7 @@ do
                 DropBox.LayoutOrder = 2
                 DropBox.Size = UDim2.new(1, 0, 0, 35)
                 DropBox.ImageTransparency = 1
+                DropBox.ClipsDescendants = true
                 Instance.new("UICorner", DropBox).CornerRadius = UDim.new(0, 6)
                 -- DropBox.AutomaticSize = Enum.AutomaticSize.Y
                 
